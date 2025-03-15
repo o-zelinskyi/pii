@@ -1,0 +1,140 @@
+.modal-add-edit-window {
+  z-index: 1;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  overflow-y: auto;
+}
+
+.add-edit-student-form {
+  margin-bottom: 20px;
+  border-radius: 0.5em;
+}
+
+.modal-delete-window {
+  z-index: 1;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  overflow-y: auto;
+}
+
+.modal-open {
+  overflow: hidden;
+}
+
+.modal-content {
+  margin: auto;
+  padding: 20px;
+  /* background-color: #aff4dd; */
+  background-color: #fff;
+  border-radius: 0.5em;
+  width: 20%;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-close {
+  padding: 0.25em 0.5em;
+  border: none;
+  border-radius: 1em;
+  background: none;
+  cursor: pointer;
+  color: black;
+  font-size: 20px;
+}
+
+.modal-close:hover {
+  background-color: var(--hover-clr);
+  color: white;
+}
+
+.modal-content > p {
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.modal-button {
+  padding: 0.25em 0.5em;
+  border: none;
+  border-radius: 1em;
+  background: #bebebe;
+  cursor: pointer;
+}
+
+.modal-button:hover {
+  background-color: var(--accent-clr);
+  color: white;
+}
+
+.input-group input[type="text"] {
+  height: 30px;
+  border: none;
+  border-bottom: 2px solid var(--line-clr);
+  transition: border-color 0.3s;
+}
+
+.input-group input[type="text"]:focus {
+  outline: none;
+  animation: border-animation 0.5s ease-in-out forwards;
+}
+
+@keyframes border-animation {
+  0% {
+    border-bottom: 2px solid var(--line-clr);
+  }
+  100% {
+    border-bottom: 2px solid var(--accent-clr);
+  }
+}
+
+.input-group input[type="date"] {
+  height: 30px;
+  border: none;
+  border-bottom: 2px solid var(--line-clr);
+  transition: border-color 0.3s;
+}
+
+.input-group input[type="date"]:focus {
+  outline: none;
+  animation: border-animation 0.5s ease-in-out forwards;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  color: #bebebe;
+}
+
+.input-group select {
+  border: none;
+  border-bottom: 2px solid #bebebe;
+  height: 30px;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  transition: border-color 0.3s;
+}
+
+.input-group select:focus {
+  outline: none;
+  border-bottom: 2px solid var(--accent-clr);
+  animation: border-animation 0.5s ease-in-out forwards;
+}

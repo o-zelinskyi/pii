@@ -1,0 +1,26 @@
+:root {
+  --base-clr: #ffffff;
+  --line-clr: #bebebe;
+  --hover-clr: #004187;
+  --text-clr: #343e3d;
+  --accent-clr: #00448e;
+  --secondary-text-clr: #607466;
+  --button-disabled: #bebebe;
+  --button-enabled: #a1e3f9;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--base-clr);
+  color: var(--text-clr);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "header header" "nav main";
+}

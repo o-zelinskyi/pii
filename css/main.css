@@ -1,0 +1,26 @@
+main {
+  grid-area: main;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+#new-student {
+  float: right;
+  margin-bottom: 20px;
+  padding: 1em;
+  border: none;
+  border-radius: 0.5em;
+  background: none;
+  cursor: pointer;
+}
+
+#new-student svg {
+  fill: var(--accent-clr);
+}
+
+#new-student:hover {
+  svg {
+    fill: white;
+  }
+  background-color: var(--hover-clr);
+}

@@ -1,0 +1,84 @@
+table {
+  background: var(--accent-clr);
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+th {
+  background: var(--hover-clr);
+  color: white;
+  font-weight: bold;
+}
+
+th,
+td {
+  padding: 1rem;
+  text-align: left;
+  color: white;
+}
+
+tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+tr:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.status-circle {
+  align-items: center;
+}
+
+.table-button {
+  padding: 0.25em 0.5em;
+  border-radius: 1em;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.table-button:hover {
+  background-color: var(--hover-clr);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pagination a {
+  color: var(--hover-clr);
+  padding: 8px 16px;
+  margin: 4px;
+  text-decoration: none;
+  margin-bottom: 32px;
+  border-radius: 20px;
+}
+
+.pagination a:hover {
+  background-color: var(--hover-clr);
+  color: white;
+}
+
+.pagination a.active {
+  background-color: var(--accent-clr);
+  color: white;
+}
+
+button {
+  svg {
+    fill: var(--button-enabled);
+  }
+}
+
+button:disabled {
+  cursor: not-allowed;
+  svg {
+    fill: var(--button-disabled);
+  }
+}
