@@ -25,33 +25,70 @@ function setupNotifications() {
   const notificationWindow = document.querySelector(".notification-window");
 
   if (notification && notificationWindow) {
-    notification.addEventListener("mouseenter", () => {
-      notificationWindow.style.display = "flex";
-      document.querySelector(".notification")?.classList.add("hidden");
-    });
+    // Детектування тачскрін пристроїв
+    const isTouchDevice = () => {
+      return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    };
 
-    notificationWindow.addEventListener("mouseenter", () => {
-      notificationWindow.style.display = "flex";
-    });
+    if (isTouchDevice()) {
+      // Обробка для тачскрін пристроїв - використовуємо клік замість hover
+      notification.addEventListener("click", (event) => {
+        event.stopPropagation(); // Зупиняємо поширення події
+        // Перемикаємо видимість
+        notificationWindow.style.display =
+          notificationWindow.style.display === "flex" ? "none" : "flex";
 
-    notification.addEventListener("mouseleave", (event) => {
-      if (
-        !event.relatedTarget ||
-        !notificationWindow.contains(event.relatedTarget)
-      ) {
-        setTimeout(() => {
-          if (!notificationWindow.matches(":hover")) {
-            notificationWindow.style.display = "none";
-          }
-        }, 50);
-      }
-    });
+        // Приховуємо червону точку сповіщення
+        document.querySelector(".notification")?.classList.add("hidden");
+      });
 
-    notificationWindow.addEventListener("mouseleave", (event) => {
-      if (!event.relatedTarget || !notification.contains(event.relatedTarget)) {
-        notificationWindow.style.display = "none";
-      }
-    });
+      // Закриваємо при кліку поза елементом
+      document.addEventListener("click", (event) => {
+        if (
+          !notification.contains(event.target) &&
+          !notificationWindow.contains(event.target)
+        ) {
+          notificationWindow.style.display = "none";
+        }
+      });
+
+      // Запобігаємо закриттю при кліку на вікно сповіщень
+      notificationWindow.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    } else {
+      // Оригінальна логіка для desktops (mouseenter/mouseleave)
+      notification.addEventListener("mouseenter", () => {
+        notificationWindow.style.display = "flex";
+        document.querySelector(".notification")?.classList.add("hidden");
+      });
+
+      notificationWindow.addEventListener("mouseenter", () => {
+        notificationWindow.style.display = "flex";
+      });
+
+      notification.addEventListener("mouseleave", (event) => {
+        if (
+          !event.relatedTarget ||
+          !notificationWindow.contains(event.relatedTarget)
+        ) {
+          setTimeout(() => {
+            if (!notificationWindow.matches(":hover")) {
+              notificationWindow.style.display = "none";
+            }
+          }, 50);
+        }
+      });
+
+      notificationWindow.addEventListener("mouseleave", (event) => {
+        if (
+          !event.relatedTarget ||
+          !notification.contains(event.relatedTarget)
+        ) {
+          notificationWindow.style.display = "none";
+        }
+      });
+    }
   }
 }
 
@@ -60,29 +97,63 @@ function setupNavigationAndMenus() {
   const profileMenu = document.querySelector(".profile-menu");
 
   if (profile && profileMenu) {
-    profile.addEventListener("mouseenter", () => {
-      profileMenu.style.display = "flex";
-    });
+    // Детектування тачскрін пристроїв
+    const isTouchDevice = () => {
+      return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    };
 
-    profileMenu.addEventListener("mouseenter", () => {
-      profileMenu.style.display = "flex";
-    });
+    if (isTouchDevice()) {
+      // Обробка для тачскрін пристроїв
+      profile.addEventListener("click", (event) => {
+        event.stopPropagation();
+        // Перемикаємо видимість
+        profileMenu.style.display =
+          profileMenu.style.display === "flex" ? "none" : "flex";
+      });
 
-    profile.addEventListener("mouseleave", (event) => {
-      if (!event.relatedTarget || !profileMenu.contains(event.relatedTarget)) {
-        setTimeout(() => {
-          if (!profileMenu.matches(":hover")) {
-            profileMenu.style.display = "none";
-          }
-        }, 50);
-      }
-    });
+      // Закриваємо при кліку поза елементом
+      document.addEventListener("click", (event) => {
+        if (
+          !profile.contains(event.target) &&
+          !profileMenu.contains(event.target)
+        ) {
+          profileMenu.style.display = "none";
+        }
+      });
 
-    profileMenu.addEventListener("mouseleave", (event) => {
-      if (!event.relatedTarget || !profile.contains(event.relatedTarget)) {
-        profileMenu.style.display = "none";
-      }
-    });
+      // Запобігаємо закриттю при кліку на меню профілю
+      profileMenu.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    } else {
+      // Оригінальна логіка для desktops
+      profile.addEventListener("mouseenter", () => {
+        profileMenu.style.display = "flex";
+      });
+
+      profileMenu.addEventListener("mouseenter", () => {
+        profileMenu.style.display = "flex";
+      });
+
+      profile.addEventListener("mouseleave", (event) => {
+        if (
+          !event.relatedTarget ||
+          !profileMenu.contains(event.relatedTarget)
+        ) {
+          setTimeout(() => {
+            if (!profileMenu.matches(":hover")) {
+              profileMenu.style.display = "none";
+            }
+          }, 50);
+        }
+      });
+
+      profileMenu.addEventListener("mouseleave", (event) => {
+        if (!event.relatedTarget || !profile.contains(event.relatedTarget)) {
+          profileMenu.style.display = "none";
+        }
+      });
+    }
   }
 
   const toggleBtn = document.getElementById("toggle-btn");
@@ -335,7 +406,13 @@ function setupModalWindows() {
       const gender = document.getElementById("gender")?.value || "";
       const birthday = document.getElementById("birthday")?.value || "";
 
-      if (firstName === "" || lastName === "" || birthday === "") {
+      if (
+        group === "" ||
+        firstName === "" ||
+        lastName === "" ||
+        birthday === "" ||
+        gender === ""
+      ) {
         alert("Please fill in all required fields");
         return;
       }

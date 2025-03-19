@@ -19,22 +19,23 @@
         <h1 class="company-name">CMS</h1>
       </a>
       <div class="right-section">
-        <div class="notification-section">
-          <a
+        <div class="notification-section notification hidden">
+          <!-- <a
             class="notification hidden"
             href="messages.html"
             aria-label="Messages"
-            ><svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="28px"
-              viewBox="0 -960 960 960"
-              width="28px"
-              fill="currentColor"
-            >
-              <path
-                d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"
-              /></svg
-          ></a>
+            >-->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="28px"
+            viewBox="0 -960 960 960"
+            width="28px"
+            fill="currentColor"
+          >
+            <path
+              d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"
+            />
+          </svg>
           <div class="notification-window">
             <div class="notification-content">
               <div class="notification-row">
@@ -75,6 +76,9 @@
                 <div class="right-column">
                   <p class="notification-text">notification content</p>
                 </div>
+              </div>
+              <div class="notification-row">
+                <button><a href="messages.html">All messages</a></button>
               </div>
             </div>
           </div>
@@ -186,6 +190,7 @@
               <label for="group">Group</label>
               <div class="select-container">
                 <select id="group" name="group">
+                  <option value="">-- Choose an option --</option>
                   <option value="PZ-24">PZ-24</option>
                   <option value="PZ-25">PZ-25</option>
                   <option value="PZ-26">PZ-26</option>
@@ -212,6 +217,7 @@
             <div class="input-group">
               <label for="gender">Gender</label>
               <select id="gender" name="gender">
+                <option value="">-- Choose an option --</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
@@ -248,13 +254,13 @@
       <table id="student-table">
         <thead>
           <tr>
-            <td>
+            <th aria-label="Select all items">
               <input
                 type="checkbox"
                 id="main-checkbox"
                 aria-label="Select all items"
               />
-            </td>
+            </th>
             <th>Group</th>
             <th>Name</th>
             <th>Gender</th>
@@ -273,7 +279,7 @@
               />
             </td>
             <td data-cell="group">PZ-25</td>
-            <td data-cell="name">Andrii Potiha</td>
+            <td data-cell="name">Andrii Potikha</td>
             <td data-cell="gender">Male</td>
             <td data-cell="birthday">2006-12-12</td>
             <td data-cell="status">
@@ -388,10 +394,10 @@
                 aria-label="Select item"
               />
             </td>
-            <td data-cell="group">TRB-101</td>
-            <td data-cell="name">Soffia Voljanska</td>
-            <td data-cell="gender">Female</td>
-            <td data-cell="birthday">2007-12-12</td>
+            <td data-cell="group">PZ-25</td>
+            <td data-cell="name">Oleksii Mahinskyi</td>
+            <td data-cell="gender">Male</td>
+            <td data-cell="birthday">2006-12-12</td>
             <td data-cell="status">
               <svg
                 class="status-indicator"

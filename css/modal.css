@@ -120,7 +120,7 @@
 }
 
 .input-group label {
-  color: #bebebe;
+  color: var(--accent-clr);
 }
 
 .input-group select {
