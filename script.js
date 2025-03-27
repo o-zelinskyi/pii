@@ -470,55 +470,95 @@ function setupModalWindows() {
       const table = document.getElementById("student-table");
       if (!table) return;
 
-      const tbody = table.querySelector("tbody") || table;
-      const row = tbody.insertRow();
+      // Check if we're in edit mode or create mode
+      const isEditMode = createBtn.textContent === "Edit";
 
-      const cell0 = row.insertCell(0);
-      cell0.setAttribute("data-cell", "check");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "checkbox";
-      checkbox.setAttribute("aria-label", "check");
-      cell0.appendChild(checkbox);
+      if (isEditMode) {
+        // In edit mode, update the existing row instead of creating a new one
+        const selectedCheckbox = document.querySelector(".checkbox:checked");
+        if (selectedCheckbox) {
+          const row = selectedCheckbox.closest("tr");
+          if (row) {
+            // Update the cells with new values
+            const groupCell =
+              row.querySelector('[data-cell="group"]') || row.cells[1];
+            const nameCell =
+              row.querySelector('[data-cell="name"]') || row.cells[2];
+            const genderCell =
+              row.querySelector('[data-cell="gender"]') || row.cells[3];
+            const birthdayCell =
+              row.querySelector('[data-cell="birthday"]') || row.cells[4];
 
-      const cell1 = row.insertCell(1);
-      cell1.setAttribute("data-cell", "group");
-      const cell2 = row.insertCell(2);
-      cell2.setAttribute("data-cell", "name");
-      const cell3 = row.insertCell(3);
-      cell3.setAttribute("data-cell", "gender");
-      const cell4 = row.insertCell(4);
-      cell4.setAttribute("data-cell", "birthday");
-      const cell5 = row.insertCell(5);
-      cell5.setAttribute("data-cell", "status");
-      const cell6 = row.insertCell(6);
-      cell6.setAttribute("data-cell", "options");
+            groupCell.textContent = group;
+            nameCell.textContent = `${firstName} ${lastName}`;
+            genderCell.textContent = gender;
+            birthdayCell.textContent = birthday;
 
-      cell1.textContent = group;
-      cell2.textContent = `${firstName} ${lastName}`;
-      cell3.textContent = gender;
-      cell4.textContent = birthday;
+            // Update the selectedStudents array with the new values
+            if (
+              window.studentTableFunctions &&
+              window.studentTableFunctions.updateSelectedStudents
+            ) {
+              window.studentTableFunctions.updateSelectedStudents();
+            }
+          }
+        }
+      } else {
+        // Original code for creating a new row
+        const tbody = table.querySelector("tbody") || table;
+        const row = tbody.insertRow();
 
-      // status indicator
-      cell5.innerHTML = `<svg class="status-indicator" width="20" height="20" viewBox="0 0 10 10">
+        const cell0 = row.insertCell(0);
+        cell0.setAttribute("data-cell", "check");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "checkbox";
+        checkbox.setAttribute("aria-label", "check");
+        cell0.appendChild(checkbox);
+
+        const cell1 = row.insertCell(1);
+        cell1.setAttribute("data-cell", "group");
+        const cell2 = row.insertCell(2);
+        cell2.setAttribute("data-cell", "name");
+        const cell3 = row.insertCell(3);
+        cell3.setAttribute("data-cell", "gender");
+        const cell4 = row.insertCell(4);
+        cell4.setAttribute("data-cell", "birthday");
+        const cell5 = row.insertCell(5);
+        cell5.setAttribute("data-cell", "status");
+        const cell6 = row.insertCell(6);
+        cell6.setAttribute("data-cell", "options");
+
+        cell1.textContent = group;
+        cell2.textContent = `${firstName} ${lastName}`;
+        cell3.textContent = gender;
+        cell4.textContent = birthday;
+
+        // status indicator
+        cell5.innerHTML = `<svg class="status-indicator" width="20" height="20" viewBox="0 0 10 10">
         <circle class="status-circle" cx="5" cy="5" r="4" fill="#F44336" />
       </svg>`;
 
-      // edit + delete buttons
-      cell6.innerHTML = `
+        // edit + delete buttons
+        cell6.innerHTML = `
         <button disabled class="table-button edit" aria-label="Edit">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#bebebe">
-            <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
+            <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 [...]
           </svg>
         </button>
         <button disabled class="table-button delete" aria-label="Delete">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#bebebe">
-            <path d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm80-80h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0-80Zm0 400Z" />
+            <path d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 [...]
           </svg>
         </button>`;
 
+        if (window.studentTableFunctions) {
+          window.studentTableFunctions.setupChildCheckboxListeners([checkbox]);
+        }
+      }
+
+      // Common actions for both create and edit
       if (window.studentTableFunctions) {
-        window.studentTableFunctions.setupChildCheckboxListeners([checkbox]);
         window.studentTableFunctions.updateButtonsState();
       }
 
