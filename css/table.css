@@ -82,3 +82,7 @@ button:disabled {
     fill: var(--button-disabled);
   }
 }
+
+td > p {
+  display: none;
+}

@@ -1,3 +1,14 @@
+class Student {
+  constructor(group, firstName, lastName, gender, birthday, status) {
+    this.group = group;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.gender = gender;
+    this.birthday = birthday;
+    this.status = status;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupNotifications();
 
@@ -279,9 +290,28 @@ function setupStudentTable() {
       if (checkbox.checked) {
         const row = checkbox.closest("tr");
         if (row) {
+          const groupCell =
+            row.querySelector('[data-cell="group"]') || row.cells[1];
           const studentNameCell =
-            row.querySelector('[data-cell="name"]') || row.cells[2]; // Fallback to 3rd cell if data-cell attribute not set
-          selectedStudents.push(studentNameCell.textContent);
+            row.querySelector('[data-cell="name"]') || row.cells[2];
+          const [firstName, lastName] = studentNameCell.textContent.split(" ");
+          const genderCell =
+            row.querySelector('[data-cell="gender"]') || row.cells[3];
+          const birthdayCell =
+            row.querySelector('[data-cell="birthday"]') || row.cells[4];
+          const statusCell =
+            row.querySelector('td[data-cell="status"] p') || row.cells[5];
+
+          let newStudent = new Student(
+            groupCell.textContent,
+            firstName,
+            lastName,
+            genderCell.textContent,
+            birthdayCell.textContent,
+            statusCell.textContent.trim()
+          );
+
+          selectedStudents.push(newStudent);
         }
       }
     });
@@ -324,7 +354,7 @@ function setupStudentTable() {
         list.textContent = "";
       } else {
         modalSure.innerHTML = `Are you sure you want to delete ${selectedStudents.length} selected student(s)?`;
-        list.innerHTML = selectedStudents.join(", ");
+        list.innerHTML = selectedStudents.name.join(", ");
       }
     }
   }
@@ -337,6 +367,24 @@ function setupStudentTable() {
 
     const head = addEditWindow.querySelector(".modal-h2");
     if (head) head.textContent = "Edit student";
+
+    const groupField = document.getElementById("group");
+    if (groupField) groupField.value = selectedStudents[0].group;
+
+    const firstNameField = document.getElementById("first-name");
+    if (firstNameField) firstNameField.value = selectedStudents[0].firstName;
+
+    const lastNameField = document.getElementById("last-name");
+    if (lastNameField) lastNameField.value = selectedStudents[0].lastName;
+
+    const gender = document.getElementById("gender");
+    if (gender) gender.value = selectedStudents[0].gender;
+
+    const birthday = document.getElementById("birthday");
+    if (birthday) birthday.value = selectedStudents[0].birthday;
+
+    const editBtn = document.querySelector(".modal-create");
+    if (editBtn) editBtn.textContent = "Edit";
 
     document.body.classList.add("modal-open");
     addEditWindow.style.display = "flex";
@@ -362,6 +410,8 @@ function setupModalWindows() {
     addNewBtn.addEventListener("click", () => {
       const head = addEditWindow.querySelector(".modal-h2");
       if (head) head.textContent = "Add student";
+      const createBtn = addEditWindow.querySelector(".modal-create");
+      if (createBtn) createBtn.textContent = "Create";
       addEditWindow.style.display = "flex";
 
       document.body.classList.add("modal-open");
@@ -424,18 +474,25 @@ function setupModalWindows() {
       const row = tbody.insertRow();
 
       const cell0 = row.insertCell(0);
+      cell0.setAttribute("data-cell", "check");
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "checkbox";
+      checkbox.setAttribute("aria-label", "check");
       cell0.appendChild(checkbox);
 
       const cell1 = row.insertCell(1);
+      cell1.setAttribute("data-cell", "group");
       const cell2 = row.insertCell(2);
       cell2.setAttribute("data-cell", "name");
       const cell3 = row.insertCell(3);
+      cell3.setAttribute("data-cell", "gender");
       const cell4 = row.insertCell(4);
+      cell4.setAttribute("data-cell", "birthday");
       const cell5 = row.insertCell(5);
+      cell5.setAttribute("data-cell", "status");
       const cell6 = row.insertCell(6);
+      cell6.setAttribute("data-cell", "options");
 
       cell1.textContent = group;
       cell2.textContent = `${firstName} ${lastName}`;
@@ -449,12 +506,12 @@ function setupModalWindows() {
 
       // edit + delete buttons
       cell6.innerHTML = `
-        <button disabled class="table-button edit">
+        <button disabled class="table-button edit" aria-label="Edit">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#bebebe">
             <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
           </svg>
         </button>
-        <button disabled class="table-button delete">
+        <button disabled class="table-button delete" aria-label="Delete">
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#bebebe">
             <path d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm80-80h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0-80Zm0 400Z" />
           </svg>
