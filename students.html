@@ -7,12 +7,11 @@
     <title>Students</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/table.css" />
-    <link rel="stylesheet" href="css/nav.css" />
+    <link rel="stylesheet" href="css/navigation.css" />
     <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="css/main.css" />
     <link rel="stylesheet" href="css/modal.css" />
     <link rel="stylesheet" href="css/respon.css" />
-    <script type="text/javascript" src="script.js" defer></script>
   </head>
   <body>
     <header>
@@ -190,7 +189,7 @@
             <div class="input-group">
               <label for="group">Group</label>
               <div class="select-container">
-                <select id="group" name="group">
+                <select id="group" name="group" required>
                   <option value="">-- Choose an option --</option>
                   <option value="PZ-24">PZ-24</option>
                   <option value="PZ-25">PZ-25</option>
@@ -209,15 +208,15 @@
             </div>
             <div class="input-group">
               <label for="first-name">First name</label>
-              <input type="text" id="first-name" name="first-name" />
+              <input type="text" id="first-name" name="first-name" required />
             </div>
             <div class="input-group">
               <label for="last-name">Last name</label>
-              <input type="text" id="last-name" name="last-name" />
+              <input type="text" id="last-name" name="last-name" required />
             </div>
             <div class="input-group">
               <label for="gender">Gender</label>
-              <select id="gender" name="gender">
+              <select id="gender" name="gender" required>
                 <option value="">-- Choose an option --</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -231,6 +230,7 @@
                 id="birthday"
                 name="birthday"
                 min="1910-01-01"
+                required
               />
             </div>
           </form>
@@ -461,5 +461,7 @@
         <a href="#">&raquo;</a>
       </div>
     </main>
+
+    <script type="module" src="js/script.js"></script>
   </body>
 </html>
