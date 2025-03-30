@@ -15,12 +15,37 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/js/sw.js")
-    .then((register) =>
-      console.log("Service Worker registered successfully.", register)
-    )
-    .catch((error) =>
-      console.error("Service Worker registration failed", error)
-    );
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        console.log("Service Worker registered successfully.", registration);
+
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              if (confirm("Нова версія додатку доступна. Оновити зараз?")) {
+                registration.waiting.postMessage({ action: "skipWaiting" });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.error("Service Worker registration failed", error);
+      });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        window.location.reload();
+        refreshing = true;
+      }
+    });
+  });
 }
