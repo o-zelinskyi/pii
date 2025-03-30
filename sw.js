@@ -1,27 +1,28 @@
 const CACHE_NAME = "cms-cache";
+const BASE_URL = self.location.origin;
 const URLS_TO_CACHE = [
-  "/",
-  "/students.html",
-  "/tasks.html",
-  "/messages.html",
-  "/dashboard.html",
-  "/manifest.json",
-  "/css/style.css",
-  "/css/table.css",
-  "/css/navigation.css",
-  "/css/header.css",
-  "/css/main.css",
-  "/css/modal.css",
-  "/css/respon.css",
-  "/js/app.js",
-  "/js/models.js",
-  "/js/notifications.js",
-  "/js/navigation.js",
-  "/js/studentTable.js",
-  "/js/modals.js",
-  "/img/avatar.webp",
-  "/screenshots/pc.png",
-  "/screenshots/mobile.png",
+  `${BASE_URL}/`,
+  `${BASE_URL}/students.html`,
+  `${BASE_URL}/tasks.html`,
+  `${BASE_URL}/messages.html`,
+  `${BASE_URL}/dashboard.html`,
+  `${BASE_URL}/manifest.json`,
+  `${BASE_URL}/css/style.css`,
+  `${BASE_URL}/css/table.css`,
+  `${BASE_URL}/css/navigation.css`,
+  `${BASE_URL}/css/header.css`,
+  `${BASE_URL}/css/main.css`,
+  `${BASE_URL}/css/modal.css`,
+  `${BASE_URL}/css/respon.css`,
+  `${BASE_URL}/js/app.js`,
+  `${BASE_URL}/js/models.js`,
+  `${BASE_URL}/js/notifications.js`,
+  `${BASE_URL}/js/navigation.js`,
+  `${BASE_URL}/js/studentTable.js`,
+  `${BASE_URL}/js/modals.js`,
+  `${BASE_URL}/img/avatar.webp`,
+  `${BASE_URL}/screenshots/pc.png`,
+  `${BASE_URL}/screenshots/mobile.png`,
 ];
 
 self.addEventListener("install", (event) => {
@@ -29,7 +30,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("Opened cache");
-      return cache.addAll(URLS_TO_CACHE);
+      return cache.addAll(URLS_TO_CACHE).catch(console.error);
     })
   );
 });
