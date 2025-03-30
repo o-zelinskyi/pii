@@ -13,3 +13,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupModalWindows();
 });
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/js/sw.js")
+    .then((register) =>
+      console.log("Service Worker registered successfully.", register)
+    )
+    .catch((error) =>
+      console.error("Service Worker registration failed", error)
+    );
+}

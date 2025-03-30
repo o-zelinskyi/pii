@@ -76,7 +76,12 @@
 }
 
 .modal-button:hover {
-  background-color: var(--accent-clr);
+  background-color: #2097ff;
+  color: white;
+}
+
+.modal-create {
+  background-color: var(--hover-clr);
   color: white;
 }
 
@@ -137,4 +142,15 @@
   outline: none;
   border-bottom: 2px solid var(--accent-clr);
   animation: border-animation 0.5s ease-in-out forwards;
+}
+
+input.invalid {
+  border: 2px solid var(--error-clr);
+  background-color: white;
+}
+
+.error-message {
+  color: #ff0000;
+  font-size: 12px;
+  margin-top: 5px;
 }

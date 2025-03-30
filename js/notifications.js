@@ -15,24 +15,19 @@ function setupNotifications() {
   const notificationWindow = document.querySelector(".notification-window");
 
   if (notification && notificationWindow) {
-    // Детектування тачскрін пристроїв
     const isTouchDevice = () => {
       return "ontouchstart" in window || navigator.maxTouchPoints > 0;
     };
 
     if (isTouchDevice()) {
-      // Обробка для тачскрін пристроїв - використовуємо клік замість hover
       notification.addEventListener("click", (event) => {
-        event.stopPropagation(); // Зупиняємо поширення події
-        // Перемикаємо видимість
+        event.stopPropagation();
         notificationWindow.style.display =
           notificationWindow.style.display === "flex" ? "none" : "flex";
 
-        // Приховуємо червону точку сповіщення
         document.querySelector(".notification")?.classList.add("hidden");
       });
 
-      // Закриваємо при кліку поза елементом
       document.addEventListener("click", (event) => {
         if (
           !notification.contains(event.target) &&
@@ -42,12 +37,10 @@ function setupNotifications() {
         }
       });
 
-      // Запобігаємо закриттю при кліку на вікно сповіщень
       notificationWindow.addEventListener("click", (event) => {
         event.stopPropagation();
       });
     } else {
-      // Оригінальна логіка для desktops (mouseenter/mouseleave)
       notification.addEventListener("mouseenter", () => {
         notificationWindow.style.display = "flex";
         document.querySelector(".notification")?.classList.add("hidden");

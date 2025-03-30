@@ -9,7 +9,6 @@ function setupStudentTable() {
 
   initializeCheckboxes();
 
-  // disable all buttons at start
   updateButtonsState();
 
   const birthdayDatePicker = document.getElementById("birthday");
@@ -205,14 +204,13 @@ function setupStudentTable() {
     const birthday = document.getElementById("birthday");
     if (birthday) birthday.value = selectedStudents[0].birthday;
 
-    const editBtn = document.querySelector(".modal-create");
-    if (editBtn) editBtn.textContent = "Edit";
+    const editBtn = document.querySelector("#submit");
+    if (editBtn) editBtn.value = "Edit";
 
     document.body.classList.add("modal-open");
     addEditWindow.style.display = "flex";
   }
 
-  // Export these functions to be used elsewhere
   window.studentTableFunctions = {
     updateButtonsState,
     updateSelectedStudents,

@@ -1,0 +1,33 @@
+{
+  "name": "CMS System",
+  "short_name": "CMS",
+  "description": "A simple CMS system for managing content.",
+
+  "start_url": "/students.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "orientations": ["portrait-primary", "landscape-primary"],
+  "theme_color": "#ffffff",
+
+  "icons": [
+    {
+      "src": "/img/avatar.webp",
+      "sizes": "500x500",
+      "type": "image/webp"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/pc.png",
+      "sizes": "1910x880",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "1176x1030",
+      "type": "image/png"
+    }
+  ]
+}
