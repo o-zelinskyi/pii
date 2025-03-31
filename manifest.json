@@ -13,6 +13,11 @@
 
   "icons": [
     {
+      "src": "/favicon.ico",
+      "sizes": "96x96",
+      "type": "image/x-icon"
+    },
+    {
       "src": "/img/avatar.webp",
       "sizes": "500x500",
       "type": "image/webp"
