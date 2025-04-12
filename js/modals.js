@@ -64,15 +64,15 @@ function setupModalWindows() {
           required: true,
         },
         firstName: {
-          pattern: /^[A-Za-z]{2,}$/,
+          pattern: /^[A-Za-zА-ЯІЇЄҐа-яіїєґ'\-]{2,}$/,
           message:
-            "First name must contain at least 2 letters and only alphabetic characters",
+            "First name must contain at least 2 characters (letters, apostrophes or hyphens)",
           required: true,
         },
         lastName: {
-          pattern: /^[A-Za-z]{2,}$/,
+          pattern: /^[A-Za-zА-ЯІЇЄҐа-яіїєґ'\-]{2,}$/,
           message:
-            "Last name must contain at least 2 letters and only alphabetic characters",
+            "First name must contain at least 2 characters (letters, apostrophes or hyphens)",
           required: true,
         },
         gender: {
@@ -250,27 +250,6 @@ function setupModalWindows() {
         <circle class="status-circle" cx="5" cy="5" r="4" fill="#F44336" />
       </svg>`;
 
-    // edit + delete buttons
-    //     cell6.innerHTML = `<button disabled class="table-button edit" aria-label="Edit">
-    //   <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#bebebe">
-    //     <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Z"/>
-    //   </svg>
-    // </button>
-    //         <button disabled class="table-button delete" aria-label="Delete">
-    //   <svg
-    //                   xmlns="http://www.w3.org/2000/svg"
-    //                   height="24px"
-    //                   viewBox="0 -960 960 960"
-    //                   width="24px"
-    //                   fill="#e3e3e3"
-    //                 >
-    //                   <path
-    //                     d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm80-80h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0-80Zm0 400Z"
-    //                   />
-    //                 </svg>
-    // </button>`;
-
-    // Create the SVG element and its children programmatically
     const createSvgButton = (ariaLabel, pathData, fill) => {
       const button = document.createElement("button");
       button.disabled = true;
@@ -296,7 +275,6 @@ function setupModalWindows() {
       return button;
     };
 
-    // Usage
     const editPathData =
       "M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z";
     const deletePathData =
@@ -305,9 +283,7 @@ function setupModalWindows() {
     const editButton = createSvgButton("Edit", editPathData, "#bebebe");
     const deleteButton = createSvgButton("Delete", deletePathData, "#e3e3e3");
 
-    // Clear cell6 content first
     cell6.innerHTML = "";
-    // Append the buttons
     cell6.appendChild(editButton);
     cell6.appendChild(deleteButton);
 

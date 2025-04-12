@@ -1,7 +1,7 @@
 class Student {
-  constructor(group, firstName, lastName, gender, birthday, status) {
+  constructor(studyGroup, firstName, lastName, gender, birthday, status) {
     this.id = 0;
-    this.group = group;
+    this.studyGroup = studyGroup;
     this.firstName = firstName;
     this.lastName = lastName;
     this.gender = gender;
