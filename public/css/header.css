@@ -196,3 +196,17 @@ header {
 .right-section button:hover {
   background-color: var(--accent-clr);
 }
+
+.login, .register {
+  padding: 8px;
+  background-color: var(--hover-clr);
+  border: none;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.login:hover, .register:hover {
+  background-color: var(--accent-clr);
+}
