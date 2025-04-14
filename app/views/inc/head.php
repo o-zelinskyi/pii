@@ -12,5 +12,6 @@
     <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/main.css" />
     <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/modal.css" />
     <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/respon.css" />
+    <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/auth.css" />
   </head>
   <body>

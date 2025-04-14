@@ -1,5 +1,5 @@
     <header>
-      <a class="company-name-link" href="students.php">
+      <a class="company-name-link" href="<?php echo URLROOT; ?>/tables">
         <h1 class="company-name">CMS</h1>
       </a>
       <div class="right-section">
@@ -59,7 +59,7 @@
                 </div>
               </div>
               <div class="notification-row">
-                <button><a href="messages.php">All messages</a></button>
+                <button><a href="messages">All messages</a></button>
               </div>
             </div>
           </div>
@@ -67,19 +67,19 @@
         <div class="profile">
           <img
             class="profile-picture"
-            src="img/avatar.webp"
+            src="img/avatar.webp" 
             alt="User profile"
           />
-          <p class="username">James Bond</p>
+          <p class="username"><?php echo $_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']; ?></p>
           <div class="profile-menu">
-            <button>profile</button>
-            <button><a href="users/logout">logout</a></button>
+            <a>My profile</a>
+            <a href="<?php echo URLROOT; ?>/users/logout">Log Out</a>
           </div>
         </div>
         <?php else : ?>
         <div class="login-register">
-          <a href="users/login" class="login">Log In</a>
-          <a href="users/register" class="register">Register</a>
+          <a href="<?php echo URLROOT; ?>/users/login" class="login">Log In</a>
+          <a href="<?php echo URLROOT; ?>/users/register" class="register">Register</a>
         </div>
         <?php endif; ?>
       </div>

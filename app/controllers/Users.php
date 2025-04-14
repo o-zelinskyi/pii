@@ -154,6 +154,7 @@
       $_SESSION['user_email'] = $user->email;
       $_SESSION['user_firstname'] = $user->firstname;
       $_SESSION['user_lastname'] = $user->lastname;
+      $_SESSION['user_photo'] = $user->photo;
 
       redirect('table');
     } 

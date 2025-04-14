@@ -2,7 +2,8 @@
 $sitename = 'Students';
 require APPROOT . '/views/inc/head.php';
 require APPROOT . '/views/inc/header.php';
-require APPROOT . '/views/inc/nav.php'; ?>
+require APPROOT . '/views/inc/nav.php';
+?>
 
 <main>
       <h1>Students</h1>
@@ -26,7 +27,8 @@ require APPROOT . '/views/inc/nav.php'; ?>
             <h2 class="modal-h2">Add student</h2>
             <span class="modal-close">&times;</span>
           </div>
-          <form class="add-edit-student-form" action="<?php echo URLROOT; ?>/tables/add" method="POST">
+          <!-- <form class="add-edit-student-form" action="<?php echo URLROOT; ?>/tables/add" method="POST"> -->
+            <form class="add-edit-student-form">
             <div class="input-group">
               <label for="studygroup">Group</label>
               <div class="select-container">

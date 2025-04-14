@@ -12,9 +12,9 @@
     $paths = [
       'libraries/',
       'models/',
-      'controllers/'
+      'controllers/',
     ];
-  
+    
     foreach ($paths as $path) {
       $file = '../app/' . $path . $className . '.php';
       if (file_exists($file)) {
@@ -23,4 +23,3 @@
       }
     }
   });
-  

@@ -32,7 +32,7 @@
           >
         </li>
         <li <?php if($sitename == 'Students') echo 'class="active"' ?>> 
-          <a href="students.php" aria-label="Go to students"
+          <a href="students" aria-label="Go to students"
             ><svg
               xmlns="http://www.w3.org/2000/svg"
               height="24px"
@@ -48,7 +48,7 @@
           >
         </li>
         <li <?php if($sitename == 'Tasks') echo 'class="active"' ?>>
-          <a href="tasks.php" aria-label="Go to tasks"
+          <a href="tasks" aria-label="Go to tasks"
             ><svg
               xmlns="http://www.w3.org/2000/svg"
               height="24px"

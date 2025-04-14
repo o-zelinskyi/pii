@@ -111,8 +111,8 @@ function setupModalWindows() {
       );
 
       form.addEventListener("submit", function (e) {
-
         let isValid = true;
+        console.log("hi!");
 
         isValid = validateField(groupSelect, validationRules.group) && isValid;
         isValid =
@@ -124,27 +124,27 @@ function setupModalWindows() {
         isValid =
           validateField(birthdayInput, validationRules.birthday) && isValid;
 
-        if(!isValid) {
+        if (!isValid) {
           e.preventDefault();
           return;
         }
 
-        // if (isValid) {
-        //   if (submitBtn.value === "Edit") {
-        //     updateStudent();
-        //   } else {
-        //     addNewStudent();
-        //   }
+        if (isValid) {
+          if (submitBtn.value === "Edit") {
+            updateStudent();
+          } else {
+            addNewStudent();
+          }
 
-        //   const addEditWindow = document.querySelector(
-        //     ".modal-add-edit-window"
-        //   );
-        //   if (addEditWindow) {
-        //     addEditWindow.style.display = "none";
-        //     document.body.classList.remove("modal-open");
-        //   }
-        //   resetForm();
-        // }
+          const addEditWindow = document.querySelector(
+            ".modal-add-edit-window"
+          );
+          if (addEditWindow) {
+            addEditWindow.style.display = "none";
+            document.body.classList.remove("modal-open");
+          }
+          resetForm();
+        }
       });
 
       function validateField(field, rules) {
@@ -207,7 +207,26 @@ function setupModalWindows() {
     if (form) form.reset();
   }
 
-  function addNewStudent() {}
+  function addNewStudent() {
+    const formData = new FormData();
+    formData.append("studygroup", groupSelect.value);
+    formData.append("firstname", firstNameInput.value);
+    formData.append("lastname", lastNameInput.value);
+    formData.append("gender", genderSelect.value);
+    formData.append("birthday", birthdayInput.value);
+
+    fetch("<?php echo URLROOT; ?>/tables/add", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Success:", data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 
   function updateStudent() {}
 

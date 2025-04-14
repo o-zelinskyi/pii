@@ -179,21 +179,18 @@ header {
   padding: 8px;
 }
 
-.right-section a {
-  color: white;
-}
 
-.right-section button {
-  padding: 8px;
+.right-section a {
+  padding: 7px;
   background-color: var(--hover-clr);
   color: white;
   border: none;
   text-align: left;
-  width: 100%;
+  width: 90%;
   cursor: pointer;
 }
 
-.right-section button:hover {
+.right-section a:hover {
   background-color: var(--accent-clr);
 }
 

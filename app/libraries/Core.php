@@ -1,6 +1,6 @@
 <?php
   class Core {
-    protected $currentController = 'Pages';
+    protected $currentController = 'Tables';
     protected $currentMethod = 'index';
     protected $params = [];
 
@@ -39,5 +39,6 @@
         $url = explode('/', $url);
         return($url);
       }
+      return [];
     }
   }
