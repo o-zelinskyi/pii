@@ -128,6 +128,7 @@ require APPROOT . '/views/inc/nav.php';
     <tbody>
       <?php foreach ($data['rows'] as $row): ?>
         <tr>
+          <td hidden><?php echo $row->id; ?></td>
           <td data-cell="check">
             <input
               type="checkbox"
@@ -139,7 +140,8 @@ require APPROOT . '/views/inc/nav.php';
           <td data-cell="gender"><?php echo $row->gender; ?></td>
           <td data-cell="birthday"><?php echo $row->birthday; ?></td>
           <td data-cell="status">
-            <p>Online</p>
+            <p><?php if ($row->isLoggedIn) echo "Online";
+                else echo "Offline"; ?></p>
             <svg
               class="status-indicator"
               width="20"
@@ -150,8 +152,11 @@ require APPROOT . '/views/inc/nav.php';
                 cx="5"
                 cy="5"
                 r="4"
-                fill="#4CAF50" />
-              <!-- #4CAF50 #F44336 -->
+                <?php if ($row->isLoggedIn) {
+                  echo 'fill="#4CAF50"';
+                } else {
+                  echo 'fill="#F44336"';
+                } ?> />
             </svg>
           </td>
           <td data-cell="options">

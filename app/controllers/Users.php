@@ -133,6 +133,9 @@ class Users extends Controller
         $loggedInUser = $this->userModel->login($data['email'], $data['password']);
 
         if ($loggedInUser) {
+          error_log(date('[Y-m-d H:i:s] ') . "Login\n", 3, __DIR__ . '/../logs/user.log');
+          error_log(date('[Y-m-d H:i:s] ') . "Email: " . $data['email'] . "\n", 3, __DIR__ . '/../logs/user.log');
+          error_log(date('[Y-m-d H:i:s] ') . "Password: " . $data['password'] . "\n", 3, __DIR__ . '/../logs/user.log');
           $this->createUserSession($loggedInUser);
         } else {
           $data['password_err'] = 'Password incorrect :(((';
@@ -178,6 +181,7 @@ class Users extends Controller
         'lastname' => trim($_POST['lastname']),
         'studygroup' => trim($_POST['studygroup']),
         'gender' => trim($_POST['gender']),
+        'birthday' => trim($_POST['birthday']),
         'id' => trim($_POST['id']),
         'email_err' => '',
         'password_err' => '',
@@ -190,8 +194,6 @@ class Users extends Controller
         empty($data['lastname_err'])
       ) {
 
-        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-
         if ($this->userModel->profileEdit($data)) {
           flash('profileEdit_success', 'YEEEEEEEEEEEEAH! edit profile successfully!');
           $_SESSION['user_id'] = $data['id'];
@@ -202,23 +204,19 @@ class Users extends Controller
           $_SESSION['user_studygroup'] = $data['studygroup'];
           $_SESSION['user_gender'] = $data['gender'];
           $_SESSION['user_birthday'] = $data['birthday'];
+
+          error_log(date('[Y-m-d H:i:s] ') . "Profile edit!!! \n", 3, __DIR__ . '/../logs/user.log');
+          error_log(date('[Y-m-d H:i:s] ') . "Email: " . $_SESSION['user_email'] . "\n", 3, __DIR__ . '/../logs/user.log');
+          error_log(date('[Y-m-d H:i:s] ') . "Password: " . $_SESSION['user_password'] . "\n", 3, __DIR__ . '/../logs/user.log');
+
           redirect('');
         } else {
           die('Something went wrong.');
         }
       } else {
-        $this->view('pages/students');
+        $this->view('pages/profile', $data);
       }
     } else {
-      $_SESSION = [
-        'email' => '',
-        'password' => '',
-        'firstname' => '',
-        'lastname' => '',
-        'studygroup' => '',
-        'gender' => ''
-      ];
-
       $this->view('pages/profile', $_SESSION);
     }
   }
