@@ -20,18 +20,32 @@
       if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = [
           'studygroup' => trim($_POST['studygroup'] ?? ''),
-          'first-name' => trim($_POST['first-name'] ?? ''),
-          'last-name' => trim($_POST['last-name'] ?? ''),
+          'firstname' => trim($_POST['firstname'] ?? ''),
+          'lastname' => trim($_POST['lastname'] ?? ''),
           'gender' => trim($_POST['gender'] ?? ''),
-          'birthday' => trim($_POST['birthday'] ?? '')
+          'birthday' => trim($_POST['birthday'] ?? ''),
+          'email' => trim($_POST['email'] ?? ''),
+          'password' => trim($_POST['password'] ?? '')
         ];
 
-      $this->tableModel->addStudent($data);
-      $rows = $this->tableModel->getAllStudents();
-      $data = [
-        'rows' => $rows
-      ];
-      $this->view('pages/students', $data);
+
+        $this->tableModel->addStudent($data);
+        $rows = $this->tableModel->getAllStudents();
+        $data = [
+          'rows' => $rows
+        ];
+        $this->view('pages/students', $data);
+
+
+        // $newStudent = [
+        //   'studygroup' => $data['studygroup'],
+        //   'firstname' => $data['firstname'],
+        //   'lastname' => $data['lastname']
+        // ];
+
+        // header('Content-Type: application/json');
+        // echo json_encode(['newStudent' => $newStudent]);
+        // exit;
       }
     }
 
@@ -39,8 +53,8 @@
       if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = [
           'studygroup' => trim($_POST['studygroup'] ?? ''),
-          'first-name' => trim($_POST['first-name'] ?? ''),
-          'last-name' => trim($_POST['last-name'] ?? ''),
+          'first-name' => trim($_POST['firstname'] ?? ''),
+          'last-name' => trim($_POST['lastname'] ?? ''),
           'gender' => trim($_POST['gender'] ?? ''),
           'birthday' => trim($_POST['birthday'] ?? '')
         ];

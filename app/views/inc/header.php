@@ -72,7 +72,7 @@
           />
           <p class="username"><?php echo $_SESSION['user_firstname'] . ' ' . $_SESSION['user_lastname']; ?></p>
           <div class="profile-menu">
-            <a>My profile</a>
+            <a href="<?php echo URLROOT; ?>/users/profile">My profile</a>
             <a href="<?php echo URLROOT; ?>/users/logout">Log Out</a>
           </div>
         </div>

@@ -111,8 +111,9 @@ function setupModalWindows() {
       );
 
       form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
         let isValid = true;
-        console.log("hi!");
 
         isValid = validateField(groupSelect, validationRules.group) && isValid;
         isValid =
@@ -125,7 +126,6 @@ function setupModalWindows() {
           validateField(birthdayInput, validationRules.birthday) && isValid;
 
         if (!isValid) {
-          e.preventDefault();
           return;
         }
 
@@ -133,7 +133,7 @@ function setupModalWindows() {
           if (submitBtn.value === "Edit") {
             updateStudent();
           } else {
-            addNewStudent();
+            sendNewStudent();
           }
 
           const addEditWindow = document.querySelector(
@@ -146,6 +146,36 @@ function setupModalWindows() {
           resetForm();
         }
       });
+
+      function sendNewStudent() {
+        const formData = new FormData();
+        formData.append("studygroup", groupSelect.value);
+        formData.append("firstname", firstNameInput.value);
+        formData.append("lastname", lastNameInput.value);
+        formData.append("gender", genderSelect.value);
+        formData.append("birthday", birthdayInput.value);
+        formData.append(
+          "email",
+          firstNameInput.value + "." + lastNameInput.value + "@student.ua"
+        );
+        formData.append("password", lastNameInput.value);
+
+        fetch(URLROOT + "/tables/add", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            addNewStudent(data.newStudent);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function addNewStudent(newUser) {}
+
+      function updateStudent() {}
 
       function validateField(field, rules) {
         const errorElement = field.nextElementSibling;
@@ -206,29 +236,6 @@ function setupModalWindows() {
     const form = addEditWindow.querySelector("form");
     if (form) form.reset();
   }
-
-  function addNewStudent() {
-    const formData = new FormData();
-    formData.append("studygroup", groupSelect.value);
-    formData.append("firstname", firstNameInput.value);
-    formData.append("lastname", lastNameInput.value);
-    formData.append("gender", genderSelect.value);
-    formData.append("birthday", birthdayInput.value);
-
-    fetch("<?php echo URLROOT; ?>/tables/add", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Success:", data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
-
-  function updateStudent() {}
 
   // function addNewStudent() {
   //   const table = document.getElementById("student-table");

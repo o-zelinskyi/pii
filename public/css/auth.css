@@ -41,7 +41,9 @@
 
 .auth-input-group input[type="email"],
 .auth-input-group input[type="password"],
-.auth-input-group input[type="text"] {
+.auth-input-group input[type="text"],
+.auth-input-group input[type="date"],
+.auth-input-group select {
   height: 36px;
   border: none;
   background-color: #f7f9fc;

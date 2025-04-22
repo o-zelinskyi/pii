@@ -2,6 +2,7 @@
 $sitename = 'Register';
 require APPROOT . '/views/inc/head.php';
 require APPROOT . '/views/inc/header.php'; ?>
+
 <div class="auth-window">
 <form class="auth-form" action="<?php echo URLROOT; ?>/users/register" method="POST">
   <div class="auth-input-group">
