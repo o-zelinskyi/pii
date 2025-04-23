@@ -127,77 +127,99 @@ require APPROOT . '/views/inc/nav.php';
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($data['rows'] as $row): ?>
+      <?php if (!empty($data['rows'])) : ?>
+        <?php foreach ($data['rows'] as $row) : ?>
+          <tr data-student-id="<?php echo $row->id; ?>">
+            <td data-cell="check">
+              <input
+                type="checkbox"
+                class="checkbox"
+                aria-label="Select student" />
+            </td>
+            <td data-cell="studygroup"><?php echo $row->studygroup; ?></td>
+            <td data-cell="name"><?php echo $row->firstname . ' ' . $row->lastname; ?></td>
+            <td data-cell="gender"><?php echo $row->gender; ?></td>
+            <td data-cell="birthday"><?php echo $row->birthday; ?></td>
+            <td data-cell="status">
+              <p><?php if ($row->isLoggedIn) echo "Online";
+                  else echo "Offline"; ?></p>
+              <svg
+                class="status-indicator"
+                width="20"
+                height="20"
+                viewBox="0 0 10 10">
+                <circle
+                  class="status-circle"
+                  cx="5"
+                  cy="5"
+                  r="4"
+                  <?php if ($row->isLoggedIn) {
+                    echo 'fill="#4CAF50"';
+                  } else {
+                    echo 'fill="#F44336"';
+                  } ?> />
+              </svg>
+            </td>
+            <td data-cell="options">
+              <button disabled class="table-button edit" aria-label="Edit">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="24px"
+                  viewBox="0 -960 960 960"
+                  width="24px"
+                  fill="#e3e3e3">
+                  <path
+                    d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
+                </svg>
+              </button>
+              <button disabled class="table-button delete" aria-label="Delete">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="24px"
+                  viewBox="0 -960 960 960"
+                  width="24px"
+                  fill="#e3e3e3">
+                  <path
+                    d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm80-80h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0-80Zm0 400Z" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      <?php else: ?>
         <tr>
-          <td hidden><?php echo $row->id; ?></td>
-          <td data-cell="check">
-            <input
-              type="checkbox"
-              class="checkbox"
-              aria-label="Select item" />
-          </td>
-          <td data-cell="studygroup"><?php echo $row->studygroup; ?></td>
-          <td data-cell="name"><?php echo $row->firstname . ' ' . $row->lastname; ?></td>
-          <td data-cell="gender"><?php echo $row->gender; ?></td>
-          <td data-cell="birthday"><?php echo $row->birthday; ?></td>
-          <td data-cell="status">
-            <p><?php if ($row->isLoggedIn) echo "Online";
-                else echo "Offline"; ?></p>
-            <svg
-              class="status-indicator"
-              width="20"
-              height="20"
-              viewBox="0 0 10 10">
-              <circle
-                class="status-circle"
-                cx="5"
-                cy="5"
-                r="4"
-                <?php if ($row->isLoggedIn) {
-                  echo 'fill="#4CAF50"';
-                } else {
-                  echo 'fill="#F44336"';
-                } ?> />
-            </svg>
-          </td>
-          <td data-cell="options">
-            <button disabled class="table-button edit" aria-label="Edit">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="24px"
-                viewBox="0 -960 960 960"
-                width="24px"
-                fill="#e3e3e3">
-                <path
-                  d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
-              </svg>
-            </button>
-            <button disabled class="table-button delete" aria-label="Delete">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height="24px"
-                viewBox="0 -960 960 960"
-                width="24px"
-                fill="#e3e3e3">
-                <path
-                  d="M640-520v-80h240v80H640Zm-280 40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm80-80h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0-80Zm0 400Z" />
-              </svg>
-            </button>
-          </td>
+          <td colspan="8" class="text-center">No students found</td>
         </tr>
-      <?php endforeach; ?>
+      <?php endif; ?>
     </tbody>
   </table>
-  <div class="pagination">
-    <a href="#">&laquo;</a>
-    <a href="#" class="active">1</a>
-    <a href="#">2</a>
-    <a href="#">3</a>
-    <a href="#">4</a>
-    <a href="#">5</a>
-    <a href="#">6</a>
-    <a href="#">&raquo;</a>
-  </div>
+  <?php if (isset($data['totalPages']) && $data['totalPages'] > 1): ?>
+    <div aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item <?php echo ($data['currentPage'] <= 1) ? 'disabled' : ''; ?>">
+          <a class="page-link" href="<?php echo URLROOT; ?>/tables/index/<?php echo $data['currentPage'] - 1; ?>" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+
+        <?php for ($i = 1; $i <= $data['totalPages']; $i++): ?>
+          <li class="page-item <?php echo ($data['currentPage'] == $i) ? 'active' : ''; ?>">
+            <a class="page-link" href="<?php echo URLROOT; ?>/tables/index/<?php echo $i; ?>"><?php echo $i; ?></a>
+          </li>
+        <?php endfor; ?>
+
+        <li class="page-item <?php echo ($data['currentPage'] >= $data['totalPages']) ? 'disabled' : ''; ?>">
+          <a class="page-link" href="<?php echo URLROOT; ?>/tables/index/<?php echo $data['currentPage'] + 1; ?>" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="text-center mt-2">
+      <p>Showing page <?php echo $data['currentPage']; ?> of <?php echo $data['totalPages']; ?> (<?php echo $data['totalStudents']; ?> total records)</p>
+    </div>
+  <?php endif; ?>
 </main>
 
 <?php require APPROOT . '/views/inc/footer.php'; ?>

@@ -31,25 +31,64 @@ function setupModalWindows() {
       if (!studentTable) return;
 
       const tableBody = studentTable.querySelector("tbody");
-      const checkboxes = tableBody.querySelectorAll(".checkbox");
+      const checkboxes = tableBody.querySelectorAll(".checkbox:checked");
+
+      if (checkboxes.length === 0) {
+        console.log("No students selected for deletion");
+        return;
+      }
+
+      const studentIds = [];
 
       Array.from(checkboxes).forEach((checkbox) => {
-        if (checkbox.checked) {
-          const row = checkbox.closest("tr");
-          if (row) tableBody.removeChild(row);
+        const row = checkbox.closest("tr");
+        if (row && row.hasAttribute("data-student-id")) {
+          const studentId = row.getAttribute("data-student-id");
+          studentIds.push(studentId);
         }
       });
 
-      const mainCheckbox = document.getElementById("main-checkbox");
-      if (mainCheckbox) mainCheckbox.checked = false;
+      if (studentIds.length > 0) {
+        console.log("Deleting student IDs:", studentIds);
 
-      if (window.studentTableFunctions) {
-        window.studentTableFunctions.updateButtonsState();
-        window.studentTableFunctions.updateSelectedStudents();
+        const formData = new FormData();
+
+        studentIds.forEach((id) => {
+          formData.append("ids[]", id);
+        });
+
+        fetch(URLROOT + "/tables/delete", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => {
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Delete response:", data);
+
+            Array.from(checkboxes).forEach((checkbox) => {
+              const row = checkbox.closest("tr");
+              if (row) tableBody.removeChild(row);
+            });
+
+            const mainCheckbox = document.getElementById("main-checkbox");
+            if (mainCheckbox) mainCheckbox.checked = false;
+
+            if (window.studentTableFunctions) {
+              window.studentTableFunctions.updateButtonsState();
+              window.studentTableFunctions.updateSelectedStudents();
+            }
+          })
+          .finally(() => {
+            document.body.classList.remove("modal-open");
+            delWindow.style.display = "none";
+          });
+      } else {
+        console.error("No valid student IDs found for deletion");
+        document.body.classList.remove("modal-open");
+        delWindow.style.display = "none";
       }
-
-      document.body.classList.remove("modal-open");
-      delWindow.style.display = "none";
     });
   }
 
@@ -138,6 +177,7 @@ function setupModalWindows() {
         if (isValid) {
           if (submitBtn.value === "Edit") {
             updateStudent();
+            console.log("yes, I'm here too");
           } else {
             sendNewStudent();
           }
@@ -186,21 +226,21 @@ function setupModalWindows() {
         formData.append("lastname", lastNameInput.value);
         formData.append("gender", genderSelect.value);
         formData.append("birthday", birthdayInput.value);
-        formData.append(
-          "email",
-          firstNameInput.value + "." + lastNameInput.value + "@student.ua"
-        );
-        formData.append("password", lastNameInput.value);
 
         const selectedCheckbox = document.querySelector(".checkbox:checked");
+        console.log(selectedCheckbox);
         if (selectedCheckbox) {
           const row = selectedCheckbox.closest("tr");
+          console.log(row);
           if (row && row.hasAttribute("data-student-id")) {
+            console.log(row.getAttribute("data-student-id"));
             formData.append("id", row.getAttribute("data-student-id"));
           }
         }
 
-        fetch(URLROOT + "/tables/update", {
+        console.log("yes, I'm here");
+
+        fetch(URLROOT + "/tables/edit", {
           method: "POST",
           body: formData,
         })
