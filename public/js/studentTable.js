@@ -52,6 +52,36 @@ function setupStudentTable() {
     updateSelectedStudents();
   }
 
+  // function updateButtonsState() {
+  //   const checkboxes = document.querySelectorAll(".checkbox");
+  //   const checkedCheckboxes = Array.from(checkboxes).filter(
+  //     (checkbox) => checkbox.checked
+  //   );
+
+  //   const editButtons = document.querySelectorAll(".table-button.edit");
+  //   const deleteButtons = document.querySelectorAll(".table-button.delete");
+
+  //   // Enable/disable edit buttons based on selection
+  //   editButtons.forEach((button) => {
+  //     // Enable edit if exactly one checkbox is checked
+  //     if (checkedCheckboxes.length === 1) {
+  //       button.removeAttribute("disabled");
+  //     } else {
+  //       button.setAttribute("disabled", "disabled");
+  //     }
+  //   });
+
+  //   // Enable/disable delete buttons based on selection
+  //   deleteButtons.forEach((button) => {
+  //     // Enable delete if at least one checkbox is checked
+  //     if (checkedCheckboxes.length > 0) {
+  //       button.removeAttribute("disabled");
+  //     } else {
+  //       button.setAttribute("disabled", "disabled");
+  //     }
+  //   });
+  // }
+
   function updateButtonsState() {
     const childCheckboxes = document.querySelectorAll(".checkbox");
     const checkedCount = Array.from(childCheckboxes).filter(

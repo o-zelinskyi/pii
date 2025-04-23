@@ -10,6 +10,12 @@ function setupModalWindows() {
     addNewBtn.addEventListener("click", () => {
       const head = addEditWindow.querySelector(".modal-h2");
       if (head) head.textContent = "Add student";
+
+      form.reset();
+
+      form.action = "/tables/add";
+      form.method = "post";
+
       const createBtn = addEditWindow.querySelector("#submit");
       if (createBtn) createBtn.value = "Create";
       addEditWindow.style.display = "flex";
@@ -166,11 +172,7 @@ function setupModalWindows() {
         })
           .then((response) => response.json())
           .then((data) => {
-            if (data.status === "success") {
-              window.location.reload();
-            } else {
-              console.error("Error adding student:", data.message);
-            }
+            window.location.reload();
           })
           .catch((error) => {
             console.error("Error:", error);
@@ -204,11 +206,7 @@ function setupModalWindows() {
         })
           .then((response) => response.json())
           .then((data) => {
-            if (data.status === "success") {
-              window.location.reload();
-            } else {
-              console.error("Error updating student:", data.message);
-            }
+            window.location.reload();
           })
           .catch((error) => {
             console.error("Error:", error);

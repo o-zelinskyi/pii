@@ -27,6 +27,7 @@ require APPROOT . '/views/inc/nav.php';
         <span class="modal-close">&times;</span>
       </div>
       <form class="add-edit-student-form">
+        <input type="hidden" id="student-id" name="id">
         <div class="input-group">
           <label for="studygroup">Group</label>
           <div class="select-container">

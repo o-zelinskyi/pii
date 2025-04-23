@@ -34,6 +34,7 @@ class User
       if (password_verify($password, $row->password)) {
         $this->db->query('UPDATE users SET isLoggedIn = 1 WHERE email = :email');
         $this->db->bind(':email', $email);
+
         $this->db->execute();
         return $row;
       } else {

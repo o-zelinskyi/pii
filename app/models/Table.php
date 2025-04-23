@@ -46,6 +46,12 @@ class Table
 
   public function editStudent($data)
   {
+    if (!empty($data['password'])) {
+      $this->db->query('UPDATE users SET firstname = :firstname, lastname = :lastname, email = :email, studygroup = :studygroup, gender = :gender, password = :password, birthday = :birthday WHERE id = :id');
+      $this->db->bind(':password', password_hash($data['password'], PASSWORD_DEFAULT));
+    } else {
+      $this->db->query('UPDATE users SET firstname = :firstname, lastname = :lastname, email = :email, studygroup = :studygroup, gender = :gender, birthday = :birthday WHERE id = :id');
+    }
     $this->db->query('UPDATE users SET firstname = :firstname, lastname = :lastname, email = :email, studygroup = :studygroup, gender = :gender, password = :password, birthday = :birthday WHERE id = :id');
     $this->db->bind(':firstname', $data['firstname']);
     $this->db->bind(':lastname', $data['lastname']);
@@ -53,15 +59,18 @@ class Table
     $this->db->bind(':gender', $data['gender']);
     $this->db->bind(':birthday', $data['birthday']);
     $this->db->bind(':id', $data['id']);
-    $this->db->bind(':password', password_hash($data['password'], PASSWORD_DEFAULT));
 
-    $row = $this->db->single();
-
-    if ($this->db->rowCount() > 0) {
-      $this->db->execute();
+    if ($this->db->execute()) {
       return true;
     } else {
       return false;
     }
+  }
+
+  public function deleteStudent($id)
+  {
+    $this->db->query('DELETE FROM users WHERE id = :id');
+    $this->db->bind(':id', $id);
+    return $this->db->execute();
   }
 }
