@@ -109,7 +109,6 @@ class Tables extends Controller
         ];
 
         $result = $this->tableModel->editStudent($data);
-
         if ($result) {
           echo json_encode(['success' => true, 'message' => 'Student added successfully']);
         } else {
