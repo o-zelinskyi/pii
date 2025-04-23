@@ -39,6 +39,37 @@
   transition: all 0.3s;
 }
 
+.auth-input-group input[type="file"] {
+  display: none;
+}
+
+.photo-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  background-color: #f7f9fc;
+  border: 1px solid var(--line-clr);
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 0px;
+}
+
+.photo-upload:hover {
+  color: white;
+  background-color: var(--hover-clr);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 65, 135, 0.25);
+}
+
+.auth-input-group input[type="file"] + label:hover {
+  background-color: var(--hover-clr);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 65, 135, 0.25);
+}
+
 .auth-input-group input[type="email"],
 .auth-input-group input[type="password"],
 .auth-input-group input[type="text"],
@@ -56,7 +87,10 @@
 
 .auth-input-group input[type="email"]:focus,
 .auth-input-group input[type="password"]:focus,
-.auth-input-group input[type="text"]:focus {
+.auth-input-group input[type="text"]:focus,
+.auth-input-group input[type="date"]:focus,
+.auth-input-group input[type="file"]:focus,
+.auth-input-group select:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(0, 68, 142, 0.2);
   border-color: var(--accent-clr);

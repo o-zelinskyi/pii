@@ -238,6 +238,8 @@ function setupModalWindows() {
           }
         }
 
+        console.log("yes, I'm here");
+
         fetch(URLROOT + "/tables/edit", {
           method: "POST",
           body: formData,

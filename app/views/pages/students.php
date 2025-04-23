@@ -202,11 +202,35 @@ require APPROOT . '/views/inc/nav.php';
           </a>
         </li>
 
-        <?php for ($i = 1; $i <= $data['totalPages']; $i++): ?>
+        <?php
+        // Show a subset of page numbers when there are many pages
+        $startPage = max(1, $data['currentPage'] - 2);
+        $endPage = min($data['totalPages'], $data['currentPage'] + 2);
+
+        // Always show first page
+        if ($startPage > 1) {
+          echo '<li class="page-item"><a class="page-link" href="' . URLROOT . '/tables/index/1">1</a></li>';
+          if ($startPage > 2) {
+            echo '<li class="page-item disabled"><a class="page-link">...</a></li>';
+          }
+        }
+
+        // Show page numbers
+        for ($i = $startPage; $i <= $endPage; $i++):
+        ?>
           <li class="page-item <?php echo ($data['currentPage'] == $i) ? 'active' : ''; ?>">
             <a class="page-link" href="<?php echo URLROOT; ?>/tables/index/<?php echo $i; ?>"><?php echo $i; ?></a>
           </li>
-        <?php endfor; ?>
+        <?php endfor;
+
+        // Always show last page
+        if ($endPage < $data['totalPages']) {
+          if ($endPage < $data['totalPages'] - 1) {
+            echo '<li class="page-item disabled"><a class="page-link">...</a></li>';
+          }
+          echo '<li class="page-item"><a class="page-link" href="' . URLROOT . '/tables/index/' . $data['totalPages'] . '">' . $data['totalPages'] . '</a></li>';
+        }
+        ?>
 
         <li class="page-item <?php echo ($data['currentPage'] >= $data['totalPages']) ? 'disabled' : ''; ?>">
           <a class="page-link" href="<?php echo URLROOT; ?>/tables/index/<?php echo $data['currentPage'] + 1; ?>" aria-label="Next">

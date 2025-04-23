@@ -45,31 +45,6 @@ tr:hover {
   background-color: var(--hover-clr);
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.pagination a {
-  color: var(--hover-clr);
-  padding: 8px 16px;
-  margin: 4px;
-  text-decoration: none;
-  margin-bottom: 32px;
-  border-radius: 20px;
-}
-
-.pagination a:hover {
-  background-color: var(--hover-clr);
-  color: white;
-}
-
-.pagination a.active {
-  background-color: var(--accent-clr);
-  color: white;
-}
-
 button {
   svg {
     fill: var(--button-enabled);

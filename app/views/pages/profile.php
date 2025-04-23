@@ -4,7 +4,7 @@ require APPROOT . '/views/inc/head.php';
 require APPROOT . '/views/inc/header.php'; ?>
 
 <div class="auth-window">
-  <form class="auth-form" action="<?php echo URLROOT; ?>/users/profileEdit" method="POST">
+  <form class="auth-form" action="<?php echo URLROOT; ?>/users/profileEdit" method="POST" enctype="multipart/form-data">
     <div class=" auth-input-group">
       <label for=" firstname">Firstname</label>
       <input type="text" class="form-control <?php echo (!empty($data->firstname_err)) ? 'invalid' : '' ?>"
@@ -15,6 +15,12 @@ require APPROOT . '/views/inc/header.php'; ?>
       <label for="lastname">Lastname</label>
       <input type="text" class="form-control <?php echo (!empty($data['lastname_err'])) ? 'invalid' : '' ?>"
         id="lastname" name="lastname" value="<?php echo $_SESSION['user_lastname']; ?>" required>
+    </div>
+    <div class="auth-input-group">
+      <label for="photo">Profile picture</label>
+      <label for="photo" class="photo-upload">Upload your photo</label>
+      <input type="file" class="form-control <?php echo (!empty($data['photo_err'])) ? 'invalid' : '' ?>"
+        id="photo" name="photo" accept="image/*">
     </div>
     <div class="auth-input-group">
       <label for="email">Email</label>
@@ -55,7 +61,7 @@ require APPROOT . '/views/inc/header.php'; ?>
     <div class="auth-input-group">
       <label for="password">Password</label>
       <input type="password" class="form-control <?php echo (!empty($data['password_err'])) ? 'invalid' : '' ?>"
-        id="password" name="password" value="" required>
+        id="password" name="password" value="">
     </div>
     <button type="submit" class="btn btn-primary">Edit</button>
   </form>

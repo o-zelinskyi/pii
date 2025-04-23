@@ -15,15 +15,16 @@ class Tables extends Controller
     $page = (int)$page;
     if ($page < 1) $page = 1;
 
-    // Items per page
-    $perPage = 2;
+    $perPage = 5;
 
-    // Get paginated data
-    $rows = $this->tableModel->getPaginatedStudents($page, $perPage);
-
-    // Count total students for pagination
     $totalStudents = $this->tableModel->countStudents();
     $totalPages = ceil($totalStudents / $perPage);
+
+    if ($page > $totalPages && $totalPages > 0) {
+      $page = $totalPages;
+    }
+
+    $rows = $this->tableModel->getPaginatedStudents($page, $perPage);
 
     $data = [
       'rows' => $rows,
@@ -109,6 +110,7 @@ class Tables extends Controller
         ];
 
         $result = $this->tableModel->editStudent($data);
+
         if ($result) {
           echo json_encode(['success' => true, 'message' => 'Student added successfully']);
         } else {
