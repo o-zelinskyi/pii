@@ -195,12 +195,13 @@ function setupModalWindows() {
         const selectedCheckbox = document.querySelector(".checkbox:checked");
         if (selectedCheckbox) {
           const row = selectedCheckbox.closest("tr");
+          console.log(row);
           if (row && row.hasAttribute("data-student-id")) {
             formData.append("id", row.getAttribute("data-student-id"));
           }
         }
 
-        fetch(URLROOT + "/tables/update", {
+        fetch(URLROOT + "/tables/edit", {
           method: "POST",
           body: formData,
         })

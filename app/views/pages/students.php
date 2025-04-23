@@ -129,7 +129,7 @@ require APPROOT . '/views/inc/nav.php';
     <tbody>
       <?php foreach ($data['rows'] as $row): ?>
         <tr>
-          <td hidden><?php echo $row->id; ?></td>
+          <td data-cell="data-student-id" hidden><?php echo $row->id; ?></td>
           <td data-cell="check">
             <input
               type="checkbox"

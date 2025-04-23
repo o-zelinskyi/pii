@@ -79,6 +79,7 @@ class Tables extends Controller
 
       try {
         $data = [
+          'id' => trim($_POST['id'] ?? ''),
           'studygroup' => trim($_POST['studygroup'] ?? ''),
           'firstname' => trim($_POST['firstname'] ?? ''),
           'lastname' => trim($_POST['lastname'] ?? ''),
@@ -89,7 +90,7 @@ class Tables extends Controller
         ];
 
         // Add the student to the database
-        $result = $this->tableModel->updateStudent($data);
+        $result = $this->tableModel->editStudent($data);
 
         if ($result) {
           // Return success response

@@ -52,7 +52,6 @@ class Table
     } else {
       $this->db->query('UPDATE users SET firstname = :firstname, lastname = :lastname, email = :email, studygroup = :studygroup, gender = :gender, birthday = :birthday WHERE id = :id');
     }
-    $this->db->query('UPDATE users SET firstname = :firstname, lastname = :lastname, email = :email, studygroup = :studygroup, gender = :gender, password = :password, birthday = :birthday WHERE id = :id');
     $this->db->bind(':firstname', $data['firstname']);
     $this->db->bind(':lastname', $data['lastname']);
     $this->db->bind(':studygroup', $data['studygroup']);
