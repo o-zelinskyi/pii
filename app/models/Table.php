@@ -42,6 +42,53 @@ class Table
     return $row->total;
   }
 
+  public function findStudentByEmail($email)
+  {
+    $this->db->query('SELECT * FROM users WHERE email = :email');
+    $this->db->bind(':email', $email);
+
+    $row = $this->db->single();
+
+    if ($this->db->rowCount() > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public function findDuplicateStudent($firstname, $lastname, $studygroup)
+  {
+    $this->db->query('SELECT * FROM users WHERE firstname = :firstname AND lastname = :lastname AND studygroup = :studygroup');
+    $this->db->bind(':firstname', $firstname);
+    $this->db->bind(':lastname', $lastname);
+    $this->db->bind(':studygroup', $studygroup);
+
+    $row = $this->db->single();
+
+    if ($this->db->rowCount() > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public function findDuplicateStudentExcludingSelf($firstname, $lastname, $studygroup, $id)
+  {
+    $this->db->query('SELECT * FROM users WHERE firstname = :firstname AND lastname = :lastname AND studygroup = :studygroup AND id != :id');
+    $this->db->bind(':firstname', $firstname);
+    $this->db->bind(':lastname', $lastname);
+    $this->db->bind(':studygroup', $studygroup);
+    $this->db->bind(':id', $id);
+
+    $row = $this->db->single();
+
+    if ($this->db->rowCount() > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public function addStudent($data)
   {
     $this->db->query('INSERT INTO users (studygroup, firstname, lastname, gender, birthday, email, password) VALUES (:studygroup, :firstname, :lastname, :gender, :birthday, :email, :password)');

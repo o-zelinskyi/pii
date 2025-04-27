@@ -177,19 +177,9 @@ function setupModalWindows() {
         if (isValid) {
           if (submitBtn.value === "Edit") {
             updateStudent();
-            console.log("yes, I'm here too");
           } else {
             sendNewStudent();
           }
-
-          const addEditWindow = document.querySelector(
-            ".modal-add-edit-window"
-          );
-          if (addEditWindow) {
-            addEditWindow.style.display = "none";
-            document.body.classList.remove("modal-open");
-          }
-          resetForm();
         }
       });
 
@@ -212,10 +202,19 @@ function setupModalWindows() {
         })
           .then((response) => response.json())
           .then((data) => {
-            window.location.reload();
+            if (data.success) {
+              window.location.reload();
+            } else {
+              if (data.errors) {
+                displayServerErrors(data.errors);
+              } else {
+                alert(data.message || "Помилка додавання студента");
+              }
+            }
           })
           .catch((error) => {
             console.error("Error:", error);
+            alert("Виникла помилка при спробі додати студента");
           });
       }
 
@@ -228,17 +227,12 @@ function setupModalWindows() {
         formData.append("birthday", birthdayInput.value);
 
         const selectedCheckbox = document.querySelector(".checkbox:checked");
-        console.log(selectedCheckbox);
         if (selectedCheckbox) {
           const row = selectedCheckbox.closest("tr");
-          console.log(row);
           if (row && row.hasAttribute("data-student-id")) {
-            console.log(row.getAttribute("data-student-id"));
             formData.append("id", row.getAttribute("data-student-id"));
           }
         }
-
-        console.log("yes, I'm here");
 
         fetch(URLROOT + "/tables/edit", {
           method: "POST",
@@ -246,11 +240,70 @@ function setupModalWindows() {
         })
           .then((response) => response.json())
           .then((data) => {
-            window.location.reload();
+            if (data.success) {
+              window.location.reload();
+            } else {
+              if (data.errors) {
+                displayServerErrors(data.errors);
+              } else {
+                alert(data.message || "Помилка редагування студента");
+              }
+            }
           })
           .catch((error) => {
             console.error("Error:", error);
+            alert("Виникла помилка при спробі редагувати студента");
           });
+      }
+
+      function displayServerErrors(errors) {
+        if (errors.studygroup_err) {
+          showError(
+            groupSelect,
+            groupSelect.nextElementSibling,
+            errors.studygroup_err
+          );
+        }
+        if (errors.firstname_err) {
+          showError(
+            firstNameInput,
+            firstNameInput.nextElementSibling,
+            errors.firstname_err
+          );
+        }
+        if (errors.lastname_err) {
+          showError(
+            lastNameInput,
+            lastNameInput.nextElementSibling,
+            errors.lastname_err
+          );
+        }
+        if (errors.gender_err) {
+          showError(
+            genderSelect,
+            genderSelect.nextElementSibling,
+            errors.gender_err
+          );
+        }
+        if (errors.birthday_err) {
+          showError(
+            birthdayInput,
+            birthdayInput.nextElementSibling,
+            errors.birthday_err
+          );
+        }
+        if (errors.email_err) {
+          let errorElement = document.createElement("span");
+          errorElement.classList.add("error-message");
+          errorElement.textContent = errors.email_err;
+          alert("Помилка електронної пошти: " + errors.email_err);
+        }
+        if (errors.password_err) {
+          let errorElement = document.createElement("span");
+          errorElement.classList.add("error-message");
+          errorElement.textContent = errors.password_err;
+          alert("Помилка паролю: " + errors.password_err);
+        }
       }
 
       function validateField(field, rules) {
@@ -310,7 +363,17 @@ function setupModalWindows() {
 
   function resetForm() {
     const form = addEditWindow.querySelector("form");
-    if (form) form.reset();
+    if (form) {
+      form.reset();
+      const errorMessages = form.querySelectorAll(".error-message");
+      errorMessages.forEach((el) => {
+        el.textContent = "";
+      });
+      const inputs = form.querySelectorAll("input, select");
+      inputs.forEach((input) => {
+        input.classList.remove("invalid");
+      });
+    }
   }
 }
 

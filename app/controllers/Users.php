@@ -187,13 +187,66 @@ class Users extends Controller
         'email_err' => '',
         'password_err' => '',
         'firstname_err' => '',
-        'lastname_err' => ''
+        'lastname_err' => '',
+        'studygroup_err' => '',
+        'gender_err' => '',
+        'birthday_err' => ''
       ];
 
+      if (empty($data['email'])) {
+        $data['email_err'] = 'Please enter your email.';
+      } else {
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+          $data['email_err'] = 'Please enter a valid email address.';
+        } else {
+          $userWithEmail = $this->userModel->findUserByEmail($data['email']);
+          if ($userWithEmail && is_object($userWithEmail) && $userWithEmail->id != $data['id']) {
+            $data['email_err'] = 'Email is already taken by another user.';
+          }
+        }
+      }
+
+      if (!empty($data['password'])) {
+        if (strlen($data['password']) < 8) {
+          $data['password_err'] = 'Password must be at least 8 characters.';
+        }
+      }
+
+      if (empty($data['firstname'])) {
+        $data['firstname_err'] = 'Please enter your first name.';
+      } else {
+        if (!preg_match("/^[a-zA-Z ]*$/", $data['firstname'])) {
+          $data['firstname_err'] = 'Only letters and white space allowed.';
+        }
+      }
+
+      if (empty($data['lastname'])) {
+        $data['lastname_err'] = 'Please enter your last name.';
+      } else {
+        if (!preg_match("/^[a-zA-Z ]*$/", $data['lastname'])) {
+          $data['lastname_err'] = 'Only letters and white space allowed.';
+        }
+      }
+
+      if (empty($data['studygroup'])) {
+        $data['studygroup_err'] = 'Please select your study group.';
+      }
+
+      if (empty($data['birthday'])) {
+        $data['birthday_err'] = 'Please enter your birthday.';
+      }
+
       if (
-        empty($data['email_err']) && empty($data['password_err']) && empty($data['firstname_err']) &&
-        empty($data['lastname_err'])
+        empty($data['email_err']) && empty($data['password_err']) &&
+        empty($data['firstname_err']) && empty($data['lastname_err']) &&
+        empty($data['studygroup_err']) && empty($data['birthday_err'])
       ) {
+
+        if (!empty($data['password'])) {
+          $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        } else {
+          unset($data['password']);
+        }
 
         if ($this->userModel->profileEdit($data)) {
           flash('profileEdit_success', 'YEEEEEEEEEEEEAH! edit profile successfully!');

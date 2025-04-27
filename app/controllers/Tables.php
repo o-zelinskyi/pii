@@ -54,18 +54,100 @@ class Tables extends Controller
           'gender' => trim($_POST['gender'] ?? ''),
           'birthday' => trim($_POST['birthday'] ?? ''),
           'email' => trim($_POST['email'] ?? ''),
-          'password' => trim($_POST['password'] ?? '')
+          'password' => trim($_POST['password'] ?? ''),
+          'studygroup_err' => '',
+          'firstname_err' => '',
+          'lastname_err' => '',
+          'gender_err' => '',
+          'birthday_err' => '',
+          'email_err' => '',
+          'password_err' => ''
         ];
 
-        // Add the student to the database
-        $result = $this->tableModel->addStudent($data);
+        // Validate studygroup
+        if (empty($data['studygroup'])) {
+          $data['studygroup_err'] = 'Будь ласка, виберіть групу.';
+        }
 
-        if ($result) {
-          // Return success response
-          echo json_encode(['success' => true, 'message' => 'Student added successfully']);
+        // Validate firstname
+        if (empty($data['firstname'])) {
+          $data['firstname_err'] = 'Будь ласка, введіть ім\'я.';
+        } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['firstname'])) {
+          $data['firstname_err'] = 'Ім\'я може містити лише літери та пробіли.';
+        }
+
+        // Validate lastname
+        if (empty($data['lastname'])) {
+          $data['lastname_err'] = 'Будь ласка, введіть прізвище.';
+        } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['lastname'])) {
+          $data['lastname_err'] = 'Прізвище може містити лише літери та пробіли.';
+        }
+
+        // Validate gender
+        if (empty($data['gender'])) {
+          $data['gender_err'] = 'Будь ласка, виберіть стать.';
+        }
+
+        // Validate birthday
+        if (empty($data['birthday'])) {
+          $data['birthday_err'] = 'Будь ласка, введіть дату народження.';
         } else {
-          // Return error response
-          echo json_encode(['success' => false, 'message' => 'Failed to add student']);
+          $birthdayDate = new DateTime($data['birthday']);
+          $currentDate = new DateTime();
+
+          if ($birthdayDate > $currentDate) {
+            $data['birthday_err'] = 'Дата народження не може бути у майбутньому.';
+          }
+
+          $minDate = new DateTime('1910-01-01');
+          if ($birthdayDate < $minDate) {
+            $data['birthday_err'] = 'Некоректна дата народження.';
+          }
+        }
+
+        // Check duplicate student
+        if ($this->tableModel->findDuplicateStudent($data['firstname'], $data['lastname'], $data['studygroup'])) {
+          $data['firstname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
+          $data['lastname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
+        }
+
+        // Check for errors
+        if (
+          empty($data['studygroup_err']) &&
+          empty($data['firstname_err']) &&
+          empty($data['lastname_err']) &&
+          empty($data['gender_err']) &&
+          empty($data['birthday_err']) &&
+          empty($data['email_err']) &&
+          empty($data['password_err'])
+        ) {
+
+
+          // Add the student to the database
+          $result = $this->tableModel->addStudent($data);
+
+          if ($result) {
+            // Return success response
+            echo json_encode(['success' => true, 'message' => 'Student added successfully']);
+          } else {
+            // Return error response
+            echo json_encode(['success' => false, 'message' => 'Failed to add student']);
+          }
+        } else {
+          // Return validation errors
+          echo json_encode([
+            'success' => false,
+            'message' => 'Помилки валідації',
+            'errors' => [
+              'studygroup_err' => $data['studygroup_err'],
+              'firstname_err' => $data['firstname_err'],
+              'lastname_err' => $data['lastname_err'],
+              'gender_err' => $data['gender_err'],
+              'birthday_err' => $data['birthday_err'],
+              'email_err' => $data['email_err'],
+              'password_err' => $data['password_err']
+            ]
+          ]);
         }
       } catch (Exception $e) {
         // Handle any exceptions and return a proper JSON error
@@ -107,14 +189,92 @@ class Tables extends Controller
           'lastname' => trim($_POST['lastname'] ?? ''),
           'gender' => trim($_POST['gender'] ?? ''),
           'birthday' => trim($_POST['birthday'] ?? ''),
+          'studygroup_err' => '',
+          'firstname_err' => '',
+          'lastname_err' => '',
+          'gender_err' => '',
+          'birthday_err' => ''
         ];
 
-        $result = $this->tableModel->editStudent($data);
+        error_log(date('[Y-m-d H:i:s] ') . "Student ID: " . $data['id'] . "\n", 3, __DIR__ . '/../logs/table.log');
+        error_log(date('[Y-m-d H:i:s] ') . "Data received: " . json_encode($data) . "\n", 3, __DIR__ . '/../logs/table.log');
 
-        if ($result) {
-          echo json_encode(['success' => true, 'message' => 'Student added successfully']);
+        // Validate studygroup
+        if (empty($data['studygroup'])) {
+          $data['studygroup_err'] = 'Будь ласка, виберіть групу.';
+        }
+
+        // Validate firstname
+        if (empty($data['firstname'])) {
+          $data['firstname_err'] = 'Будь ласка, введіть ім\'я.';
+        } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['firstname'])) {
+          $data['firstname_err'] = 'Ім\'я може містити лише літери та пробіли.';
+        }
+
+        // Validate lastname
+        if (empty($data['lastname'])) {
+          $data['lastname_err'] = 'Будь ласка, введіть прізвище.';
+        } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['lastname'])) {
+          $data['lastname_err'] = 'Прізвище може містити лише літери та пробіли.';
+        }
+
+        // Validate gender
+        if (empty($data['gender'])) {
+          $data['gender_err'] = 'Будь ласка, виберіть стать.';
+        }
+
+        // Validate birthday
+        if (empty($data['birthday'])) {
+          $data['birthday_err'] = 'Будь ласка, введіть дату народження.';
         } else {
-          echo json_encode(['success' => false, 'message' => 'Failed to add student']);
+          $birthdayDate = new DateTime($data['birthday']);
+          $currentDate = new DateTime();
+
+          if ($birthdayDate > $currentDate) {
+            $data['birthday_err'] = 'Дата народження не може бути у майбутньому.';
+          }
+
+          $minDate = new DateTime('1910-01-01');
+          if ($birthdayDate < $minDate) {
+            $data['birthday_err'] = 'Некоректна дата народження.';
+          }
+        }
+
+        // Check duplicate student (excluding the current student)
+        if ($this->tableModel->findDuplicateStudentExcludingSelf($data['firstname'], $data['lastname'], $data['studygroup'], $data['id'])) {
+          $data['firstname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
+          $data['lastname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
+        }
+
+        // Check for errors
+        if (
+          empty($data['studygroup_err']) &&
+          empty($data['firstname_err']) &&
+          empty($data['lastname_err']) &&
+          empty($data['gender_err']) &&
+          empty($data['birthday_err'])
+        ) {
+
+          $result = $this->tableModel->editStudent($data);
+
+          if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Student added successfully']);
+          } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to add student']);
+          }
+        } else {
+          // Return validation errors
+          echo json_encode([
+            'success' => false,
+            'message' => 'Помилки валідації',
+            'errors' => [
+              'studygroup_err' => $data['studygroup_err'],
+              'firstname_err' => $data['firstname_err'],
+              'lastname_err' => $data['lastname_err'],
+              'gender_err' => $data['gender_err'],
+              'birthday_err' => $data['birthday_err']
+            ]
+          ]);
         }
       } catch (Exception $e) {
         echo json_encode([
