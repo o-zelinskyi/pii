@@ -183,6 +183,7 @@ class Users extends Controller
         'gender' => trim($_POST['gender']),
         'birthday' => trim($_POST['birthday']),
         'id' => trim($_POST['id']),
+        'photo' => $_SESSION['user_photo'],
         'email_err' => '',
         'password_err' => '',
         'firstname_err' => '',
