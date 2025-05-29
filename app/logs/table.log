@@ -608,3 +608,166 @@
 [2025-04-27 21:59:07] Get paginated students - Page: 1, Per Page: 5
 [2025-04-27 21:59:08] Get paginated students - Page: 1, Per Page: 5
 [2025-04-27 21:59:08] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:36] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:37] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:37] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:52] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:54] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 13:57:54] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:56] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:57:56] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:58:12] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 13:58:12] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:58:13] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:58:13] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 13:58:27] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:00:22] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:00:25] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:00:25] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:00:26] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:00:26] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:00:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:01:10] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:47] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:05:47] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:50] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:05:50] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:51] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:05:51] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:06:02] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:06:02] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:06:04] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:06:04] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:21] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:19:21] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:22] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:22] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:40] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:40] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:42] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:42] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:45] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:45] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:46] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:46] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:47] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:47] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:49] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:19:49] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:24:15] POST | Edit student function called in Tables.php
+[2025-04-28 14:24:15] Student ID: 
+[2025-04-28 14:24:15] Data received: null
+[2025-04-28 14:24:15] Student ID: 56
+[2025-04-28 14:24:15] Data received: {"id":"56","studygroup":"PZ-25","firstname":"Ivan","lastname":"Olliynyk","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 14:24:15] Edit student function called in Table.php
+[2025-04-28 14:24:15] Student ID: 56
+[2025-04-28 14:24:15] Data received: {"id":"56","studygroup":"PZ-25","firstname":"Ivan","lastname":"Olliynyk","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 14:24:15] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:24:15] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:24:40] POST | Edit student function called in Tables.php
+[2025-04-28 14:24:40] Student ID: 
+[2025-04-28 14:24:40] Data received: null
+[2025-04-28 14:24:40] Student ID: 56
+[2025-04-28 14:24:40] Data received: {"id":"56","studygroup":"PZ-26","firstname":"Ivan","lastname":"Olli","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 14:24:40] Edit student function called in Table.php
+[2025-04-28 14:24:40] Student ID: 56
+[2025-04-28 14:24:40] Data received: {"id":"56","studygroup":"PZ-26","firstname":"Ivan","lastname":"Olli","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 14:24:40] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:24:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:24:59] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:24:59] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:25:01] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:25:01] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:45:42] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:45:42] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:45:43] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:45:43] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:46:09] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:46:09] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:46:10] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:46:10] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:53:36] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:53:36] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:53:37] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:53:37] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:54:11] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:54:11] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:59:35] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:59:40] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 14:59:40] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:59:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 14:59:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:00:13] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:01:02] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:01:20] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:01:23] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:01:33] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:01:39] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:02] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 15:02:02] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:03] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:03] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:21] POST | Edit student function called in Tables.php
+[2025-04-28 15:02:21] Student ID: 
+[2025-04-28 15:02:21] Data received: null
+[2025-04-28 15:02:21] Student ID: 56
+[2025-04-28 15:02:21] Data received: {"id":"56","studygroup":"PZ-25","firstname":"Ivan","lastname":"Olliynyk","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 15:02:21] Edit student function called in Table.php
+[2025-04-28 15:02:21] Student ID: 56
+[2025-04-28 15:02:21] Data received: {"id":"56","studygroup":"PZ-25","firstname":"Ivan","lastname":"Olliynyk","gender":"Male","birthday":"2000-05-03","studygroup_err":"","firstname_err":"","lastname_err":"","gender_err":"","birthday_err":""}
+[2025-04-28 15:02:22] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:22] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:02:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:03:05] Add students
+[2025-04-28 15:03:05] Email: testtest.testtest@student.ua
+[2025-04-28 15:03:05] Password: testtest
+[2025-04-28 15:03:05] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:03:05] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:04:29] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:04:48] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:04:49] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:04:52] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:04:55] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:05:23] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:28] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:28] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:43] Get paginated students - Page: 2, Per Page: 5
+[2025-04-28 15:08:43] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:08:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:09:08] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:10:32] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:10:44] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:11:28] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 15:11:54] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 17:56:24] Get paginated students - Page: 1, Per Page: 5
+[2025-04-28 17:56:24] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 09:19:09] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 09:19:30] Get paginated students - Page: 2, Per Page: 5
+[2025-04-30 09:19:30] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 09:19:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 09:19:41] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 20:51:59] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 20:52:06] Get paginated students - Page: 1, Per Page: 5
+[2025-04-30 20:53:21] Get paginated students - Page: 1, Per Page: 5
+[2025-05-07 07:26:50] Get paginated students - Page: 1, Per Page: 5
+[2025-05-07 07:26:50] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:43:47] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:44:30] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:44:43] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:47:36] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:47:39] Get paginated students - Page: 1, Per Page: 5
+[2025-05-28 16:47:48] Get paginated students - Page: 1, Per Page: 5
+[2025-05-29 17:32:23] Get paginated students - Page: 1, Per Page: 5
+[2025-05-29 17:32:29] Get paginated students - Page: 1, Per Page: 5
+[2025-05-29 17:32:38] Get paginated students - Page: 1, Per Page: 5
+[2025-05-29 17:44:57] Get paginated students - Page: 1, Per Page: 5

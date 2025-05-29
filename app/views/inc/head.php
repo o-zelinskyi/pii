@@ -15,6 +15,3 @@
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/respon.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/auth.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/pagination.css">
-</head>
-
-<body>

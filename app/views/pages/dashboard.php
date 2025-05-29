@@ -1,7 +1,8 @@
-<?php 
+<?php
 $sitename = 'Dashboard';
 require APPROOT . '/views/inc/head.php';
-require APPROOT . '/views/inc/header.php'; 
+require APPROOT . '/views/inc/head_end.php';
+require APPROOT . '/views/inc/header.php';
 require APPROOT . '/views/inc/nav.php'; ?>
 
 tralalelo tralala

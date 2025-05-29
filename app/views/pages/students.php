@@ -1,6 +1,7 @@
 <?php
 $sitename = 'Students';
 require APPROOT . '/views/inc/head.php';
+require APPROOT . '/views/inc/head_end.php';
 require APPROOT . '/views/inc/header.php';
 require APPROOT . '/views/inc/nav.php';
 ?>
@@ -203,11 +204,9 @@ require APPROOT . '/views/inc/nav.php';
         </li>
 
         <?php
-        // Show a subset of page numbers when there are many pages
         $startPage = max(1, $data['currentPage'] - 2);
         $endPage = min($data['totalPages'], $data['currentPage'] + 2);
 
-        // Always show first page
         if ($startPage > 1) {
           echo '<li class="page-item"><a class="page-link" href="' . URLROOT . '/tables/index/1">1</a></li>';
           if ($startPage > 2) {
@@ -215,7 +214,6 @@ require APPROOT . '/views/inc/nav.php';
           }
         }
 
-        // Show page numbers
         for ($i = $startPage; $i <= $endPage; $i++):
         ?>
           <li class="page-item <?php echo ($data['currentPage'] == $i) ? 'active' : ''; ?>">
@@ -223,7 +221,6 @@ require APPROOT . '/views/inc/nav.php';
           </li>
         <?php endfor;
 
-        // Always show last page
         if ($endPage < $data['totalPages']) {
           if ($endPage < $data['totalPages'] - 1) {
             echo '<li class="page-item disabled"><a class="page-link">...</a></li>';

@@ -1,6 +1,7 @@
-<?php 
+<?php
 $sitename = 'Log In';
 require APPROOT . '/views/inc/head.php';
+require APPROOT . '/views/inc/head_end.php';
 require APPROOT . '/views/inc/header.php'; ?>
 
 <div class="auth-window">
@@ -9,9 +10,9 @@ require APPROOT . '/views/inc/header.php'; ?>
     <div class="auth-input-group">
       <label for="email">Email</label>
       <input type="email" class="form-control <?php echo (!empty($data['email_err'])) ? 'invalid' : '' ?>"
-      id="email" name="email" value="<?php echo $data['email']; ?>" required>
-      <span class="error-message"><?php echo $data['email_err']; ?></span> 
-      </div>
+        id="email" name="email" value="<?php echo $data['email']; ?>" required>
+      <span class="error-message"><?php echo $data['email_err']; ?></span>
+    </div>
     <div class="auth-input-group">
       <label for="password">Password</label>
       <input type="password" class="form-control" id="password" name="password" required>

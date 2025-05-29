@@ -64,31 +64,26 @@ class Tables extends Controller
           'password_err' => ''
         ];
 
-        // Validate studygroup
         if (empty($data['studygroup'])) {
           $data['studygroup_err'] = 'Будь ласка, виберіть групу.';
         }
 
-        // Validate firstname
         if (empty($data['firstname'])) {
           $data['firstname_err'] = 'Будь ласка, введіть ім\'я.';
         } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['firstname'])) {
           $data['firstname_err'] = 'Ім\'я може містити лише літери та пробіли.';
         }
 
-        // Validate lastname
         if (empty($data['lastname'])) {
           $data['lastname_err'] = 'Будь ласка, введіть прізвище.';
         } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['lastname'])) {
           $data['lastname_err'] = 'Прізвище може містити лише літери та пробіли.';
         }
 
-        // Validate gender
         if (empty($data['gender'])) {
           $data['gender_err'] = 'Будь ласка, виберіть стать.';
         }
 
-        // Validate birthday
         if (empty($data['birthday'])) {
           $data['birthday_err'] = 'Будь ласка, введіть дату народження.';
         } else {
@@ -105,13 +100,11 @@ class Tables extends Controller
           }
         }
 
-        // Check duplicate student
         if ($this->tableModel->findDuplicateStudent($data['firstname'], $data['lastname'], $data['studygroup'])) {
           $data['firstname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
           $data['lastname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
         }
 
-        // Check for errors
         if (
           empty($data['studygroup_err']) &&
           empty($data['firstname_err']) &&
@@ -123,18 +116,14 @@ class Tables extends Controller
         ) {
 
 
-          // Add the student to the database
           $result = $this->tableModel->addStudent($data);
 
           if ($result) {
-            // Return success response
             echo json_encode(['success' => true, 'message' => 'Student added successfully']);
           } else {
-            // Return error response
             echo json_encode(['success' => false, 'message' => 'Failed to add student']);
           }
         } else {
-          // Return validation errors
           echo json_encode([
             'success' => false,
             'message' => 'Помилки валідації',
@@ -150,7 +139,6 @@ class Tables extends Controller
           ]);
         }
       } catch (Exception $e) {
-        // Handle any exceptions and return a proper JSON error
         echo json_encode([
           'success' => false,
           'message' => 'Server error occurred',
@@ -158,10 +146,8 @@ class Tables extends Controller
         ]);
       }
 
-      // Make sure to exit after sending JSON response
       exit;
     } else {
-      // Handle non-POST requests if needed
       header('Content-Type: application/json');
       echo json_encode(['success' => false, 'message' => 'Invalid request method']);
       exit;
@@ -199,31 +185,26 @@ class Tables extends Controller
         error_log(date('[Y-m-d H:i:s] ') . "Student ID: " . $data['id'] . "\n", 3, __DIR__ . '/../logs/table.log');
         error_log(date('[Y-m-d H:i:s] ') . "Data received: " . json_encode($data) . "\n", 3, __DIR__ . '/../logs/table.log');
 
-        // Validate studygroup
         if (empty($data['studygroup'])) {
           $data['studygroup_err'] = 'Будь ласка, виберіть групу.';
         }
 
-        // Validate firstname
         if (empty($data['firstname'])) {
           $data['firstname_err'] = 'Будь ласка, введіть ім\'я.';
         } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['firstname'])) {
           $data['firstname_err'] = 'Ім\'я може містити лише літери та пробіли.';
         }
 
-        // Validate lastname
         if (empty($data['lastname'])) {
           $data['lastname_err'] = 'Будь ласка, введіть прізвище.';
         } elseif (!preg_match("/^[a-zA-Zа-яА-ЯіІїЇєЄёЁ ]*$/u", $data['lastname'])) {
           $data['lastname_err'] = 'Прізвище може містити лише літери та пробіли.';
         }
 
-        // Validate gender
         if (empty($data['gender'])) {
           $data['gender_err'] = 'Будь ласка, виберіть стать.';
         }
 
-        // Validate birthday
         if (empty($data['birthday'])) {
           $data['birthday_err'] = 'Будь ласка, введіть дату народження.';
         } else {
@@ -240,13 +221,11 @@ class Tables extends Controller
           }
         }
 
-        // Check duplicate student (excluding the current student)
         if ($this->tableModel->findDuplicateStudentExcludingSelf($data['firstname'], $data['lastname'], $data['studygroup'], $data['id'])) {
           $data['firstname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
           $data['lastname_err'] = 'Студент з таким іменем та прізвищем у цій групі вже існує.';
         }
 
-        // Check for errors
         if (
           empty($data['studygroup_err']) &&
           empty($data['firstname_err']) &&
@@ -263,7 +242,6 @@ class Tables extends Controller
             echo json_encode(['success' => false, 'message' => 'Failed to add student']);
           }
         } else {
-          // Return validation errors
           echo json_encode([
             'success' => false,
             'message' => 'Помилки валідації',

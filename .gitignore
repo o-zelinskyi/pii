@@ -1,0 +1,34 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# PHP - Composer
+vendor/
+composer.lock
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Logs
+app/logs/*.log
+chat-server/*.log
+
+# Environment files (if you use them)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts or compiled files (if any)
+public/build/
+*.phar

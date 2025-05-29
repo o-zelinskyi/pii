@@ -1,8 +1,10 @@
 :root {
   --base-clr: #ffffff;
+  --base-clr-light: #f8f9fa;
   --line-clr: #bebebe;
   --hover-clr: #004187;
   --text-clr: #343e3d;
+  --text-clr-light: #6b7280;
   --accent-clr: #00448e;
   --secondary-text-clr: #607466;
   --button-disabled: #bebebe;

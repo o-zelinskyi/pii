@@ -1,6 +1,7 @@
 <?php
 $sitename = 'Profile';
 require APPROOT . '/views/inc/head.php';
+require APPROOT . '/views/inc/head_end.php';
 require APPROOT . '/views/inc/header.php'; ?>
 
 <div class="auth-window">
