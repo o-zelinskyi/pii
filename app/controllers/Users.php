@@ -1,9 +1,14 @@
 <?php
+require_once APPROOT . '/services/UserSyncService.php';
+
 class Users extends Controller
 {
+  private $userSyncService;
+
   public function __construct()
   {
     $this->userModel = $this->model('User');
+    $this->userSyncService = new UserSyncService();
   }
 
   public function index()
@@ -247,7 +252,6 @@ class Users extends Controller
         } else {
           unset($data['password']);
         }
-
         if ($this->userModel->profileEdit($data)) {
           flash('profileEdit_success', 'YEEEEEEEEEEEEAH! edit profile successfully!');
           $_SESSION['user_id'] = $data['id'];
@@ -258,6 +262,20 @@ class Users extends Controller
           $_SESSION['user_studygroup'] = $data['studygroup'];
           $_SESSION['user_gender'] = $data['gender'];
           $_SESSION['user_birthday'] = $data['birthday'];
+
+          // Sync profile update to MongoDB
+          $userData = [
+            'user_id' => $data['id'],
+            'email' => $data['email'],
+            'firstname' => $data['firstname'],
+            'lastname' => $data['lastname'],
+            'photo' => $data['photo'] ?? '/img/avatar.webp',
+            'studygroup' => $data['studygroup'] ?? '',
+            'gender' => $data['gender'] ?? '',
+            'birthday' => $data['birthday'] ?? ''
+          ];
+
+          $this->userSyncService->syncUserUpdate($userData);
 
           error_log(date('[Y-m-d H:i:s] ') . "Profile edit!!! \n", 3, __DIR__ . '/../logs/user.log');
           error_log(date('[Y-m-d H:i:s] ') . "Email: " . $_SESSION['user_email'] . "\n", 3, __DIR__ . '/../logs/user.log');
@@ -276,7 +294,6 @@ class Users extends Controller
   }
 
 
-
   public function createUserSession($user)
   {
     $_SESSION['user_id'] = $user->id;
@@ -288,11 +305,30 @@ class Users extends Controller
     $_SESSION['user_gender'] = $user->gender;
     $_SESSION['user_birthday'] = $user->birthday;
 
+    // Sync user login to MongoDB
+    $userData = [
+      'user_id' => $user->id,
+      'email' => $user->email,
+      'firstname' => $user->firstname,
+      'lastname' => $user->lastname,
+      'photo' => $user->photo ?? '/img/avatar.webp',
+      'studygroup' => $user->studygroup ?? '',
+      'gender' => $user->gender ?? '',
+      'birthday' => $user->birthday ?? ''
+    ];
+
+    $this->userSyncService->syncUserLogin($userData);
+
     redirect('table');
   }
 
   public function logout()
   {
+    // Sync user logout to MongoDB
+    if (isset($_SESSION['user_id'])) {
+      $this->userSyncService->syncUserLogout($_SESSION['user_id']);
+    }
+
     $this->userModel->logout($_SESSION['user_email']);
     $this->destroyUserSession();
   }

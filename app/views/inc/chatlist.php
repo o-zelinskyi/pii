@@ -32,175 +32,22 @@
     <button class="filter-tab" data-filter="unread">Unread</button>
     <button class="filter-tab" data-filter="groups">Groups</button>
   </div>
-
   <!-- Chat List -->
   <div class="chatlist-content">
-    <ul class="chat-list"> <!-- Active chat -->
-      <li class="chat-item active" data-chat-id="1">
-        <div class="chat-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          <div class="online-indicator"></div>
+    <ul class="chat-list" id="chatListContainer">
+      <!-- No chats message -->
+      <div id="noChatMessage" class="no-chats-container">
+        <div class="no-chats-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
         </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">John Doe</h4>
-            <span class="chat-time">2:30 PM</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message">Yes! The new features look amazing 🚀</p>
-            <div class="chat-badges">
-              <span class="message-status read">✓✓</span>
-            </div>
-          </div>
-        </div>
-        <div class="chat-actions-menu">
-          <button class="chat-menu-btn" onclick="toggleChatMenu(1)">⋮</button>
-          <div class="chat-menu" id="chatMenu1" style="display: none;">
-            <button onclick="pinChat(1)">📌 Pin</button>
-            <button onclick="muteChat(1)">🔇 Mute</button>
-            <button onclick="archiveChat(1)">📁 Archive</button>
-            <button onclick="deleteChat(1)" class="danger">🗑 Delete</button>
-          </div>
-        </div>
-      </li> <!-- Other chats -->
-      <li class="chat-item" data-chat-id="2">
-        <div class="chat-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          <div class="away-indicator"></div>
-        </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">Jane Smith</h4>
-            <span class="chat-time">1:15 PM</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message">Thanks for the update on the project status</p>
-            <div class="chat-badges">
-              <span class="unread-count">2</span>
-            </div>
-          </div>
-        </div>
-        <div class="chat-actions-menu">
-          <button class="chat-menu-btn" onclick="toggleChatMenu(2)">⋮</button>
-          <div class="chat-menu" id="chatMenu2" style="display: none;">
-            <button onclick="pinChat(2)">📌 Pin</button>
-            <button onclick="muteChat(2)">🔇 Mute</button>
-            <button onclick="archiveChat(2)">📁 Archive</button>
-            <button onclick="deleteChat(2)" class="danger">🗑 Delete</button>
-          </div>
-        </div>
-      </li>
-
-      <li class="chat-item pinned" data-chat-id="3">
-        <div class="chat-avatar group-avatar">
-          <div class="group-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24">
-              <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A2.996 2.996 0 0 0 17.06 6c-.8 0-1.54.5-1.85 1.26l-1.92 5.76c-.15.45.04.95.49 1.1.45.15.95-.04 1.1-.49l1.91-5.76.01.01L18.06 8c.8 0 1.54-.5 1.85-1.26z" />
-            </svg>
-          </div>
-        </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">
-              📌 Development Team
-              <span class="chat-type-badge">Group</span>
-            </h4>
-            <span class="chat-time">12:45 PM</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message"><strong>Mike:</strong> Let's schedule a meeting for tomorrow</p>
-            <div class="chat-badges">
-              <span class="unread-count">5</span>
-            </div>
-          </div>
-        </div>
-        <div class="chat-actions-menu">
-          <button class="chat-menu-btn" onclick="toggleChatMenu(3)">⋮</button>
-          <div class="chat-menu" id="chatMenu3" style="display: none;">
-            <button onclick="unpinChat(3)">📌 Unpin</button>
-            <button onclick="muteChat(3)">🔇 Mute</button>
-            <button onclick="leaveGroup(3)" class="danger">🚪 Leave Group</button>
-          </div>
-        </div>
-      </li>
-
-      <li class="chat-item" data-chat-id="4">
-        <div class="chat-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-        </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">Alice Johnson</h4>
-            <span class="chat-time">Yesterday</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message">See you tomorrow at the presentation!</p>
-            <div class="chat-badges">
-              <span class="message-status delivered">✓</span>
-            </div>
-          </div>
-        </div>
-        <div class="chat-actions-menu">
-          <button class="chat-menu-btn" onclick="toggleChatMenu(4)">⋮</button>
-          <div class="chat-menu" id="chatMenu4" style="display: none;">
-            <button onclick="pinChat(4)">📌 Pin</button>
-            <button onclick="muteChat(4)">🔇 Mute</button>
-            <button onclick="archiveChat(4)">📁 Archive</button>
-            <button onclick="deleteChat(4)" class="danger">🗑 Delete</button>
-          </div>
-        </div>
-      </li>
-
-      <li class="chat-item muted" data-chat-id="5">
-        <div class="chat-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          <div class="muted-indicator">🔇</div>
-        </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">Bob Wilson</h4>
-            <span class="chat-time">Monday</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message">The documents have been uploaded successfully</p>
-            <div class="chat-badges"></div>
-          </div>
-        </div>
-        <div class="chat-actions-menu">
-          <button class="chat-menu-btn" onclick="toggleChatMenu(5)">⋮</button>
-          <div class="chat-menu" id="chatMenu5" style="display: none;">
-            <button onclick="pinChat(5)">📌 Pin</button>
-            <button onclick="unmuteChat(5)">🔊 Unmute</button>
-            <button onclick="archiveChat(5)">📁 Archive</button>
-            <button onclick="deleteChat(5)" class="danger">🗑 Delete</button>
-          </div>
-        </div>
-      </li>
-
-      <!-- Typing indicator for chatlist -->
-      <li class="chat-item typing" data-chat-id="6" style="display: none;">
-        <div class="chat-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          <div class="online-indicator"></div>
-        </div>
-        <div class="chat-info">
-          <div class="chat-header-info">
-            <h4 class="chat-name">Sarah Connor</h4>
-            <span class="chat-time">now</span>
-          </div>
-          <div class="chat-preview">
-            <p class="last-message typing-text">
-              <span class="typing-dots-small">
-                <span></span>
-                <span></span>
-                <span></span>
-              </span>
-              typing...
-            </p>
-            <div class="chat-badges"></div>
-          </div>
-        </div>
-      </li>
+        <h3>No conversations yet</h3>
+        <p>Start a new conversation to get started</p>
+        <button class="start-chat-btn" onclick="document.getElementById('createChatBtn').click()">
+          Start New Chat
+        </button>
+      </div>
     </ul>
   </div>
 </nav>
@@ -217,35 +64,12 @@
         <input type="text" placeholder="Search users..." id="userSearch">
       </div>
       <div class="users-list">
-        <div class="user-item" data-user-id="1">
-          <div class="user-avatar">
-            <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
+        <!-- Users will be loaded dynamically from MariaDB -->
+        <div id="usersListContainer">
+          <div class="loading-users">
+            <div class="spinner"></div>
+            <p>Loading users...</p>
           </div>
-          <div class="user-info">
-            <h4>Michael Brown</h4>
-            <span>Online</span>
-          </div>
-          <input type="checkbox" name="user" value="1">
-        </div>
-        <div class="user-item" data-user-id="2">
-          <div class="user-avatar">
-            <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          </div>
-          <div class="user-info">
-            <h4>Sarah Davis</h4>
-            <span>Last seen 5 minutes ago</span>
-          </div>
-          <input type="checkbox" name="user" value="2">
-        </div>
-        <div class="user-item" data-user-id="3">
-          <div class="user-avatar">
-            <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar">
-          </div>
-          <div class="user-info">
-            <h4>Tom Wilson</h4>
-            <span>Last seen 2 hours ago</span>
-          </div>
-          <input type="checkbox" name="user" value="3">
         </div>
       </div>
     </div>

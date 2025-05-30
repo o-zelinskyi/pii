@@ -126,4 +126,49 @@ class User
 
     return $this->db->rowCount() > 0;
   }
+  public function getAllStudents()
+  {
+    $this->db->query('SELECT id, firstname, lastname, email, photo, studygroup FROM users ORDER BY firstname, lastname');
+    return $this->db->resultSet();
+  }
+
+  public function getUsersForChat($search = '', $excludeId = 0)
+  {
+    $sql = 'SELECT id, firstname, lastname, email, studygroup, photo, isLoggedIn FROM users WHERE 1=1';
+    $params = []; // Initialize params array
+
+    if (!empty($search)) {
+      $sql .= ' AND (firstname LIKE :search OR lastname LIKE :search OR email LIKE :search)';
+      $params[':search'] = '%' . $search . '%'; // Add search param
+    }
+
+    if ($excludeId > 0) {
+      $sql .= ' AND id != :exclude_id';
+      $params[':exclude_id'] = $excludeId; // Add exclude_id param
+    }
+
+    $sql .= ' ORDER BY isLoggedIn DESC, firstname, lastname';
+
+    $this->db->query($sql);
+
+    // Bind parameters
+    foreach ($params as $key => $value) {
+      $this->db->bind($key, $value);
+    }
+
+    return $this->db->resultSet(); // Execute and return results
+  }
+
+  public function getUserById($id)
+  {
+    $this->db->query('SELECT * FROM users WHERE id = :id');
+    $this->db->bind(':id', $id);
+    return $this->db->single();
+  }
+
+  public function getOnlineUsers()
+  {
+    $this->db->query('SELECT id, firstname, lastname, email, photo, studygroup FROM users WHERE isLoggedIn = 1 ORDER BY firstname, lastname');
+    return $this->db->resultSet();
+  }
 }

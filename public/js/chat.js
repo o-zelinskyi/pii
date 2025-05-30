@@ -319,14 +319,20 @@ function setupModals() {
       }
     });
   });
-
   // Create chat confirmation
   confirmBtn.addEventListener("click", () => {
     const selectedUsers = Array.from(
       document.querySelectorAll('input[name="user"]:checked')
     );
     if (selectedUsers.length > 0) {
-      createNewChat(selectedUsers);
+      // Use the real chat creation function if available
+      if (typeof createNewChatWithRealUsers === "function") {
+        createNewChatWithRealUsers(selectedUsers);
+      } else {
+        console.error("createNewChatWithRealUsers function not available");
+        // Fallback to creating chat via WebSocket directly
+        createNewChatWithWebSocket(selectedUsers);
+      }
       closeModal();
     }
   });
@@ -349,66 +355,45 @@ function setupModals() {
       item.style.display = isVisible ? "flex" : "none";
     });
   }
+  function createNewChatWithWebSocket(selectedUsers) {
+    if (!window.chatWS) {
+      console.error("Chat WebSocket not initialized");
+      if (typeof showNotification !== "undefined") {
+        showNotification("Chat connection not available", "error");
+      }
+      return;
+    }
 
-  function createNewChat(selectedUsers) {
-    // In a real application, this would make an API call
-    console.log(
-      "Creating new chat with users:",
-      selectedUsers.map((u) => u.value)
-    );
+    // Get selected user IDs
+    const participantIds = selectedUsers.map((user) => parseInt(user.value));
 
-    // For demo purposes, add a new chat to the list
-    const chatList = document.querySelector(".chat-list");
-    const newChatItem = createNewChatItem(selectedUsers);
-    chatList.insertBefore(newChatItem, chatList.firstChild);
-
-    // Select the new chat
-    newChatItem.click();
-
-    // Show success message
-    showNotification("New conversation started!", "success");
-  }
-
-  function createNewChatItem(selectedUsers) {
-    const li = document.createElement("li");
-    li.className = "chat-item";
-    li.dataset.chatId = "new_" + Date.now();
-
-    const userName =
-      selectedUsers.length === 1
-        ? document.querySelector(
-            `[data-user-id="${selectedUsers[0].value}"] .user-info h4`
-          ).textContent
-        : `Group Chat (${selectedUsers.length})`;
-
-    li.innerHTML = `
-            <div class="chat-avatar">
-                <img src="/img/avatar.webp" alt="User Avatar">
-                <div class="online-indicator"></div>
-            </div>
-            <div class="chat-info">
-                <div class="chat-header-info">
-                    <h4 class="chat-name">${userName}</h4>
-                    <span class="chat-time">now</span>
-                </div>
-                <div class="chat-preview">
-                    <p class="last-message">Say hello to start the conversation!</p>
-                    <div class="chat-badges"></div>
-                </div>
-            </div>
-        `;
-
-    // Add click handler
-    li.addEventListener("click", function () {
-      document
-        .querySelectorAll(".chat-item")
-        .forEach((item) => item.classList.remove("active"));
-      this.classList.add("active");
-      updateChatHeader(this);
-      loadChatMessages(this.dataset.chatId);
+    // Get user names for chat name from window.students (real data from database)
+    const selectedUserNames = participantIds.map((userId) => {
+      const student = window.students
+        ? window.students.find((s) => s.id === userId)
+        : null;
+      return student
+        ? `${student.firstname} ${student.lastname}`
+        : "Unknown User";
     });
 
-    return li;
+    // Determine chat name and type
+    const isGroup = participantIds.length > 1;
+    const chatName = isGroup
+      ? `Group Chat (${selectedUserNames.join(", ")})`
+      : selectedUserNames[0];
+
+    console.log("Creating chat with participants:", participantIds);
+    console.log("Chat name:", chatName);
+    console.log("Using real student data:", window.students ? "Yes" : "No");
+
+    // Create chat using WebSocket
+    window.chatWS.createChat(participantIds, chatName, isGroup);
+
+    // Show success notification
+    if (typeof showNotification !== "undefined") {
+      showNotification("Creating new conversation...", "info");
+    }
   }
 }
 

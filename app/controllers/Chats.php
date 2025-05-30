@@ -1,13 +1,26 @@
 <?php
+require_once APPROOT . '/services/UserSyncService.php';
+
 class Chats extends Controller
 {
-  public function index()
+  private $userSyncService;
+
+  public function __construct()
   {
     if (!isLoggedIn()) {
       redirect('users/login');
     }
 
+    $this->tableModel = $this->model('Table');
+    $this->userSyncService = new UserSyncService();
+  }
+
+  public function index()
+  {
     $chatToken = $this->generateChatToken($_SESSION['user_id']);
+
+    // Sync user to MongoDB when accessing chat
+    $this->syncCurrentUser();
 
     $data = [
       'user' => [
@@ -17,7 +30,8 @@ class Chats extends Controller
         'lastname' => $_SESSION['user_lastname']
       ],
       'chat_token' => $chatToken,
-      'node_server_url' => 'http://localhost:3000'
+      'node_server_url' => 'http://localhost:3000',
+      'server_status' => $this->userSyncService->isNodeServerRunning()
     ];
 
     $this->view('chat/index', $data);
@@ -33,8 +47,27 @@ class Chats extends Controller
     return base64_encode(json_encode($payload));
   }
 
+  private function syncCurrentUser()
+  {
+    $userData = [
+      'user_id' => $_SESSION['user_id'],
+      'email' => $_SESSION['user_email'],
+      'firstname' => $_SESSION['user_firstname'],
+      'lastname' => $_SESSION['user_lastname'],
+      'photo' => $_SESSION['user_photo'] ?? '/img/avatar.webp',
+      'studygroup' => $_SESSION['user_studygroup'] ?? '',
+      'gender' => $_SESSION['user_gender'] ?? '',
+      'birthday' => $_SESSION['user_birthday'] ?? ''
+    ];
+
+    $this->userSyncService->syncUserLogin($userData);
+  }
+
   public function messages()
   {
+    // Sync user to MongoDB when accessing chat
+    $this->syncCurrentUser();
+
     // Get current user data for socket connection
     $userData = [
       'user_id' => $_SESSION['user_id'],

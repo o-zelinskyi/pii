@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
@@ -48,22 +49,20 @@ app.use(limiter);
 const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB");
   })
   .catch((error) => {
     console.error("MongoDB connection error:", error);
+    console.log("Please check your MongoDB Atlas credentials in .env file");
   });
 
 // MongoDB Models
 const userSchema = new mongoose.Schema(
   {
-    user_id: { type: Number, required: true, unique: true }, // References MariaDB users.id
-    email: { type: String, required: true },
+    user_id: { type: Number, required: true, unique: true },
+    email: { type: String, required: true, unique: true }, // Made email unique as it usually is
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
     isOnline: { type: Boolean, default: false },
@@ -150,9 +149,10 @@ const chatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema); // Create User model
 const Message = mongoose.model("Message", messageSchema);
-const Chat = mongoose.model("Chat", chatSchema);
+const Chat = mongoose.model("Chat", chatSchema); // Create Chat model
+const UserStatus = mongoose.model("UserStatus", userStatusSchema);
 
 // Store active socket connections
 const activeUsers = new Map();
@@ -499,6 +499,71 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Get user chats (explicit request)
+  socket.on("getUserChats", async () => {
+    try {
+      const user = activeUsers.get(socket.id);
+
+      if (!user) {
+        socket.emit("error", { message: "User not authenticated" });
+        return;
+      }
+
+      // Get user's chats with last message details
+      const chats = await Chat.find({
+        "participants.user_id": user.user_id,
+        "participants.leftAt": null,
+      })
+        .populate({
+          path: "lastMessage",
+          select: "content sender_id createdAt messageType",
+        })
+        .sort({ lastActivity: -1 })
+        .lean();
+
+      // Add unread count and format chat data
+      const chatsWithDetails = await Promise.all(
+        chats.map(async (chat) => {
+          // Count unread messages
+          const unreadCount = await Message.countDocuments({
+            chat_id: chat._id,
+            sender_id: { $ne: user.user_id },
+            "readBy.user_id": { $ne: user.user_id },
+          });
+
+          // Get other participants (for 1-on-1 chats)
+          const otherParticipants = chat.participants.filter(
+            (p) => p.user_id !== user.user_id && !p.leftAt
+          );
+
+          // Generate chat name if not set
+          let chatName = chat.name;
+          if (!chat.isGroup && otherParticipants.length > 0) {
+            // For 1-on-1 chats, try to get the other user's name
+            const otherUser = await User.findOne({
+              user_id: otherParticipants[0].user_id,
+            });
+            if (otherUser) {
+              chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+            }
+          }
+
+          return {
+            ...chat,
+            name: chatName,
+            unreadCount,
+            participants: otherParticipants.length,
+          };
+        })
+      );
+
+      socket.emit("chatsLoaded", chatsWithDetails);
+    } catch (error) {
+      console.error("Error getting user chats:", error);
+      socket.emit("error", { message: "Failed to load chats" });
+    }
+  });
+
   // Typing indicator
   socket.on("typing", (data) => {
     const { chatId, isTyping } = data;
@@ -603,6 +668,73 @@ io.on("connection", (socket) => {
 
 // REST API Endpoints
 
+// Create chat endpoint
+app.post("/api/create-chat", async (req, res) => {
+  try {
+    const { participants, chatType, createdBy } = req.body;
+
+    if (
+      !participants ||
+      !Array.isArray(participants) ||
+      participants.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Participants array is required",
+      });
+    }
+
+    if (!createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: "Creator ID is required",
+      });
+    }
+
+    // Add creator to participants if not included
+    const allParticipants = participants.includes(createdBy)
+      ? participants
+      : [...participants, createdBy];
+
+    // Determine if it's a group chat
+    const isGroup = chatType === "group" || allParticipants.length > 2;
+
+    // Generate chat name
+    let chatName;
+    if (isGroup) {
+      chatName = `Group Chat ${Date.now()}`;
+    } else {
+      // For 1-on-1 chats, we'll set the name based on participants later
+      chatName = `Chat ${Date.now()}`;
+    }
+
+    // Create chat
+    const chat = new Chat({
+      name: chatName,
+      isGroup,
+      participants: allParticipants.map((userId) => ({
+        user_id: parseInt(userId),
+        role: parseInt(userId) === parseInt(createdBy) ? "admin" : "member",
+      })),
+    });
+
+    await chat.save();
+
+    res.json({
+      success: true,
+      message: "Chat created successfully",
+      chatId: chat._id.toString(),
+    });
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create chat",
+      error: error.message,
+    });
+  }
+});
+
 // Get user's chats
 app.get("/api/chats/:userId", async (req, res) => {
   try {
@@ -622,56 +754,129 @@ app.get("/api/chats/:userId", async (req, res) => {
   }
 });
 
-// Get students for chat creation (from MariaDB simulation)
+// Get students for chat creation (from MariaDB)
 app.get("/api/students", async (req, res) => {
   try {
-    // This would typically query your MariaDB database
-    // For now, we'll return a mock response
-    const students = [
-      { id: 1, firstname: "John", lastname: "Doe", email: "john@example.com" },
-      {
-        id: 2,
-        firstname: "Jane",
-        lastname: "Smith",
-        email: "jane@example.com",
-      },
-      {
-        id: 3,
-        firstname: "Michael",
-        lastname: "Brown",
-        email: "michael@example.com",
-      },
-      {
-        id: 4,
-        firstname: "Sarah",
-        lastname: "Davis",
-        email: "sarah@example.com",
-      },
-      { id: 5, firstname: "Tom", lastname: "Wilson", email: "tom@example.com" },
-    ];
+    // Fetch real students from MariaDB via direct PHP endpoint
+    const response = await axios.get(
+      "http://localhost/newPiiWithMvc/public/api/students.php"
+    );
 
-    res.json({ success: true, students });
+    if (response.data.success) {
+      res.json({
+        success: true,
+        students: response.data.students,
+      });
+    } else {
+      throw new Error(
+        response.data.message || "Failed to fetch students from MariaDB"
+      );
+    }
   } catch (error) {
-    console.error("Error fetching students:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch students" });
+    console.error("Error fetching students from MariaDB:", error.message);
+
+    // Return error instead of mock data to ensure real data is always used
+    res.status(503).json({
+      success: false,
+      message: "Database connection failed - unable to fetch real student data",
+      error: error.message,
+      note: "Chat creation requires real database connection",
+    });
   }
 });
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    mongodb:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-  });
+// Sync user data from MariaDB to MongoDB
+app.post("/api/sync-user", async (req, res) => {
+  try {
+    const userData = req.body;
+    console.log("Received user data for sync:", userData);
+
+    if (!userData || !userData.user_id || !userData.email) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required user data (user_id, email)",
+      });
+    }
+
+    // Use user_id as the primary key for finding and updating
+    // userData might come from different PHP sources, ensure consistency
+    const updateData = {
+      email: userData.email,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      // isOnline and lastSeen could be managed by socket connections primarily
+      // but can be initialized or updated here if provided
+    };
+
+    if (userData.isOnline !== undefined) {
+      updateData.isOnline = userData.isOnline;
+    }
+    if (userData.lastSeen !== undefined) {
+      updateData.lastSeen = userData.lastSeen;
+    }
+
+    const user = await User.findOneAndUpdate(
+      { user_id: userData.user_id },
+      { $set: updateData },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    console.log("User synced/updated in MongoDB:", user);
+    res.json({ success: true, message: "User synced successfully", user });
+  } catch (error) {
+    console.error("Error syncing user to MongoDB:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error during user sync",
+      error: error.message,
+    });
+  }
 });
 
-const PORT = process.env.PORT || 3000;
+app.get("/api/user-status/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user ID" });
+    }
 
+    const user = await User.findOne({ user_id: userId });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Potentially merge with UserStatus model if more detailed status is needed
+    res.json({
+      success: true,
+      data: {
+        user_id: user.user_id,
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen,
+        // Add other status fields if UserStatus model is merged or queried here
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user status from MongoDB:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// Socket.IO connection handling
+// ...existing code...
+
+// Start server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Chat server running on port ${PORT}`);
-  console.log(`Health check available at http://localhost:${PORT}/health`);
+  console.log(`Socket.IO server ready for connections`);
 });
+
+module.exports = { app, server, io };
