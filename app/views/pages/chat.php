@@ -41,7 +41,13 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
         <div class="online-indicator" id="online-indicator"></div>
       </div>
       <div class="chat-details">
-        <h3 id="chat-name">Select a chat</h3>
+        <h3 style="margin: 0;" id="chat-name">Select a chat</h3> <!-- ADDED for chat name -->
+        <button id="edit-chat-name-btn" class="edit-chat-name-btn" style="display:none; margin-left: 10px; background: none; border: none; cursor: pointer;" title="Edit chat name">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+            <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.793l-2.03-2.03L13.502.734a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+            <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+          </svg>
+        </button>
         <span class="status" id="chat-status">Choose a conversation to start messaging</span>
       </div>
     </div>
@@ -53,7 +59,7 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
       </button>
       <button class="action-btn" title="Call" onclick="startCall()">
         <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
         </svg>
       </button>
       <button class="action-btn" title="Video Call" onclick="startVideoCall()">
@@ -69,85 +75,76 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
     </div>
   </div>
 
-  <!-- Chat Messages -->
-  <div class="chat-messages" id="chat-messages">
-    <!-- Welcome message when no chat is selected -->
-    <div class="no-chat-selected" id="no-chat-selected">
-      <div class="welcome-content">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-        </svg>
-        <h3>Welcome to Messages</h3>
-        <p>Select a conversation from the sidebar to start chatting</p>
-      </div>
-    </div>
-
-    <!-- No messages in selected chat -->
-    <div class="no-messages" id="no-messages" style="display: none;">
-      <div class="no-messages-content">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-        </svg>
-        <h3>No messages yet</h3>
-        <p>Start a conversation by sending a message</p>
-      </div>
-    </div>
-
-    <!-- Typing indicator -->
-    <div class="typing-indicator" style="display: none;" id="typing-indicator">
-      <div class="message other">
-        <div class="message-avatar">
-          <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="Avatar">
+  <div id="chat-main-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;"> <!-- ADD THIS WRAPPER and some styles -->
+    <!-- Chat Messages -->
+    <div class="chat-messages" id="chat-messages" style="flex-grow: 1; overflow-y: auto; padding: 10px;">
+      <!-- Welcome message when no chat is selected -->
+      <div class="no-chat-selected" id="no-chat-selected" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+        <div class="welcome-content">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          <h3>Welcome to Messages</h3>
+          <p>Select a conversation from the sidebar to start chatting</p>
         </div>
-        <div class="message-content">
-          <div class="typing-bubble">
-            <div class="typing-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+      </div>
+
+      <!-- No messages in selected chat -->
+      <div class="no-messages" id="no-messages" style="display: none;">
+        <div class="no-messages-content">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          <h3>No messages yet</h3>
+          <p>Start a conversation by sending a message</p>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="typing-indicator" style="display: none;" id="typing-indicator">
+        <div class="message other">
+          <div class="message-avatar">
+            <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="Avatar">
+          </div>
+          <div class="message-content">
+            <div class="typing-bubble">
+              <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Reply Preview -->
-  <div class="reply-preview" id="replyPreview" style="display: none;">
-    <div class="reply-content">
-      <div class="reply-info">
-        <span class="reply-to">Replying to <strong id="reply-to-name">User</strong></span>
-        <button class="cancel-reply" onclick="cancelReply()">×</button>
+    <!-- Reply Preview -->
+    <div class="reply-preview" id="replyPreview" style="display: none;">
+      <div class="reply-content">
+        <div class="reply-info">
+          <span class="reply-to">Replying to <strong id="reply-to-name">User</strong></span>
+          <button class="cancel-reply" onclick="cancelReply()">×</button>
+        </div>
+        <div class="reply-message" id="reply-message">Message content</div>
       </div>
-      <div class="reply-message" id="reply-message">Message content</div>
     </div>
-  </div>
 
-  <!-- Chat Input -->
-  <div class="chat-input-container" id="chat-input-container" style="display: none;">
-    <div class="chat-input">
-      <button class="input-action-btn" onclick="toggleAttachmentMenu()" title="Attach">
+    <!-- Chat Input -->
+    <div class="chat-input-container" id="chat-input-container" style="display: none;">
+      <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+      <button class="input-action-btn" title="Emoji" onclick="toggleEmojiPicker()">
         <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z" />
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
         </svg>
       </button>
-
-      <div class="input-field">
-        <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
-        <button class="emoji-btn" onclick="toggleEmojiPicker()" title="Emoji">
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-          </svg>
-        </button>
-      </div>
-
-      <button class="send-btn" id="send-btn">
+      <button id="send-btn" class="send-btn" title="Send">
         <svg width="20" height="20" viewBox="0 0 24 24">
           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
         </svg>
       </button>
     </div>
-  </div>
+  </div> <!-- END OF WRAPPER -->
 </div>
 
 <script>
@@ -194,34 +191,65 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
 
     // Function to show chat interface when a chat is selected
     window.showChatInterface = function(chatId, chatName, participants) {
-      // Hide welcome message
-      noChatSelected.style.display = 'none';
+      console.log(`Showing chat: ${chatName} (ID: ${chatId})`);
+      const chatMainContent = document.getElementById('chat-main-content');
+      const chatInputContainer = document.getElementById('chat-input-container');
+      const chatMessages = document.getElementById('chat-messages');
 
-      // Show input container
-      chatInputContainer.style.display = 'block';
+      if (chatMainContent) {
+        chatMainContent.style.display = 'flex'; // Show the main chat area
+      }
+      if (chatInputContainer) {
+        chatInputContainer.style.display = 'flex'; // Show the input area
+      }
 
-      // Update chat header
-      document.getElementById('chat-name').textContent = chatName;
-      document.getElementById('chat-status').textContent = 'Online';
+      // Clear previous messages
+      if (chatMessages) {
+        chatMessages.innerHTML = '';
+      }
 
-      // Show no messages if chat is empty
-      noMessages.style.display = 'flex';
+      // Update chat header with the chat name
+      const chatHeaderName = document.querySelector('#chat-header .chat-details h3');
+      if (chatHeaderName) {
+        chatHeaderName.textContent = chatName;
+      } else {
+        console.error('Chat header name element (#chat-header .chat-details h3) not found.');
+      }
 
-      // Focus input
-      if (messageInput) {
-        messageInput.focus();
+      window.currentChatId = chatId; // Store current chat ID
+
+      // Load messages for the selected chat
+      if (window.chatWS && typeof window.chatWS.loadMessages === 'function') {
+        window.chatWS.loadMessages(chatId);
+      } else {
+        console.error('WebSocket not initialized or loadMessages function not available.');
       }
     };
 
     // Function to hide chat interface
     window.hideChatInterface = function() {
-      noChatSelected.style.display = 'flex';
-      chatInputContainer.style.display = 'none';
-      noMessages.style.display = 'none';
+      const chatMainContent = document.getElementById('chat-main-content');
+      const chatInputContainer = document.getElementById('chat-input-container');
+      const chatMessages = document.getElementById('chat-messages');
+      const chatHeaderName = document.querySelector('#chat-header .chat-details h3');
 
-      // Clear messages
-      const existingMessages = chatMessages.querySelectorAll('.message');
-      existingMessages.forEach(msg => msg.remove());
+      if (chatMainContent) {
+        chatMainContent.style.display = 'none';
+      }
+      if (chatInputContainer) {
+        chatInputContainer.style.display = 'none';
+      }
+
+      if (chatHeaderName) {
+        chatHeaderName.textContent = ''; // Clear chat name
+      }
+
+      if (chatMessages) {
+        // Optionally, display a placeholder message
+        // chatMessages.innerHTML = '<div id="no-chat-selected-placeholder" style="text-align: center; padding: 20px; color: #777;">Select a chat to view messages.</div>';
+        chatMessages.innerHTML = ''; // Or just clear it
+      }
+      window.currentChatId = null; // Reset current chat ID
     };
   });
 

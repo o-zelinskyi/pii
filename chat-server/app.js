@@ -206,15 +206,57 @@ io.on("connection", (socket) => {
           firstname,
           lastname,
         });
-      });
-
-      // Send user's chats list
-      const chatsWithDetails = await Chat.find({
+      }); // Send user's chats list with participant details
+      const chatsRaw = await Chat.find({
         "participants.user_id": user_id,
         "participants.leftAt": null,
       })
         .populate("lastMessage")
-        .sort({ lastActivity: -1 });
+        .sort({ lastActivity: -1 })
+        .lean();
+
+      // Process chats to include participant details and proper names
+      const chatsWithDetails = await Promise.all(
+        chatsRaw.map(async (chat) => {
+          // Populate participant details with user information
+          const participantsWithDetails = await Promise.all(
+            chat.participants.map(async (participant) => {
+              const participantUser = await User.findOne({
+                user_id: participant.user_id,
+              });
+              return {
+                ...participant,
+                firstname: participantUser?.firstname || "Unknown",
+                lastname: participantUser?.lastname || "User",
+                photo: participantUser?.photo || "/img/avatar.webp",
+                isOnline: participantUser?.isOnline || false,
+              };
+            })
+          );
+
+          // Generate proper chat name for 1-on-1 chats
+          let chatName = chat.name;
+          if (!chat.isGroup && chat.participants.length === 2) {
+            const otherParticipant = chat.participants.find(
+              (p) => p.user_id !== user_id && !p.leftAt
+            );
+            if (otherParticipant) {
+              const otherUser = await User.findOne({
+                user_id: otherParticipant.user_id,
+              });
+              if (otherUser) {
+                chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+              }
+            }
+          }
+
+          return {
+            ...chat,
+            name: chatName,
+            participants: participantsWithDetails,
+          };
+        })
+      );
 
       socket.emit("chatsLoaded", chatsWithDetails);
 
@@ -280,12 +322,23 @@ io.on("connection", (socket) => {
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
-
       const messages = await Message.find({ chat_id: chatId })
         .populate("replyTo")
         .sort({ createdAt: -1 })
         .limit(limit * page)
         .skip((page - 1) * limit);
+
+      // Populate sender information for each message
+      const messagesWithSenders = await Promise.all(
+        messages.map(async (message) => {
+          const sender = await User.findOne({ user_id: message.sender_id });
+          return {
+            ...message.toObject(),
+            senderName: sender ? sender.firstname : "Unknown",
+            senderLastname: sender ? sender.lastname : "User",
+          };
+        })
+      );
 
       // Mark messages as read
       await Message.updateMany(
@@ -306,8 +359,8 @@ io.on("connection", (socket) => {
 
       socket.emit("messagesLoaded", {
         chatId,
-        messages: messages.reverse(),
-        hasMore: messages.length === limit,
+        messages: messagesWithSenders.reverse(),
+        hasMore: messagesWithSenders.length === limit,
       });
     } catch (error) {
       console.error("Error loading messages:", error);
@@ -396,24 +449,62 @@ io.on("connection", (socket) => {
       if (!user) {
         socket.emit("error", { message: "User not authenticated" });
         return;
-      }
-
-      // Add creator to participants if not included
+      } // Add creator to participants if not included
       const allParticipants = participants.includes(user.user_id)
         ? participants
         : [...participants, user.user_id];
 
+      // Determine if it's a group chat - override client setting for proper logic
+      const actualIsGroup = allParticipants.length > 2;
+
       // Create chat
       const chat = new Chat({
-        name: isGroup ? name : `Chat ${Date.now()}`,
-        isGroup,
+        name: actualIsGroup
+          ? name || `Group Chat ${Date.now()}`
+          : `Chat ${Date.now()}`,
+        isGroup: actualIsGroup,
         participants: allParticipants.map((userId) => ({
           user_id: userId,
           role: userId === user.user_id ? "admin" : "member",
         })),
       });
-
       await chat.save();
+
+      // Populate participant details for the response
+      const participantsWithDetails = await Promise.all(
+        chat.participants.map(async (participant) => {
+          const participantUser = await User.findOne({
+            user_id: participant.user_id,
+          });
+          return {
+            ...participant,
+            firstname: participantUser?.firstname || "Unknown",
+            lastname: participantUser?.lastname || "User",
+            photo: participantUser?.photo || "/img/avatar.webp",
+            isOnline: participantUser?.isOnline || false,
+          };
+        })
+      ); // Generate proper chat name for 1-on-1 chats
+      let chatName = chat.name;
+      if (!actualIsGroup && allParticipants.length === 2) {
+        const otherParticipant = allParticipants.find(
+          (userId) => userId !== user.user_id
+        );
+        if (otherParticipant) {
+          const otherUser = await User.findOne({
+            user_id: otherParticipant,
+          });
+          if (otherUser) {
+            chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+          }
+        }
+      }
+
+      const chatResponse = {
+        ...chat.toObject(),
+        name: chatName,
+        participants: participantsWithDetails,
+      };
 
       // Join all participants to the chat room
       const participantSockets = Array.from(activeUsers.entries())
@@ -426,7 +517,7 @@ io.on("connection", (socket) => {
 
       // Notify all participants
       io.to(chat._id.toString()).emit("chatCreated", {
-        chat,
+        chat: chatResponse,
         creator: {
           user_id: user.user_id,
           firstname: user.firstname,
@@ -436,6 +527,91 @@ io.on("connection", (socket) => {
     } catch (error) {
       console.error("Error creating chat:", error);
       socket.emit("error", { message: "Failed to create chat" });
+    }
+  });
+  // Update chat name
+  socket.on("updateChatName", async (data) => {
+    try {
+      const { chatId, newName } = data;
+      const user = activeUsers.get(socket.id);
+
+      if (!user) {
+        socket.emit("error", { message: "User not authenticated" });
+        return;
+      }
+
+      console.log(
+        `updateChatName: User ${user.user_id} attempting to update chat ${chatId} to "${newName}"`
+      );
+
+      // First, find the chat to see what we're working with
+      const chatForDebug = await Chat.findById(chatId);
+      if (chatForDebug) {
+        console.log(
+          `updateChatName: Chat found - isGroup: ${chatForDebug.isGroup}, participants:`,
+          chatForDebug.participants
+        );
+      } else {
+        console.log(`updateChatName: Chat ${chatId} not found`);
+        socket.emit("error", { message: "Chat not found" });
+        return;
+      }
+
+      // Find the chat and verify user is an admin participant
+      const chat = await Chat.findOne({
+        _id: chatId,
+        isGroup: true, // Only group chats can have their names edited
+        participants: {
+          $elemMatch: {
+            user_id: user.user_id,
+            role: "admin", // User must be an admin
+            leftAt: null, // User must still be in the chat
+          },
+        },
+      });
+
+      if (!chat) {
+        // More specific error message
+        if (!chatForDebug.isGroup) {
+          socket.emit("error", {
+            message:
+              "Cannot rename 1-on-1 chats. Only group chats can be renamed.",
+          });
+        } else {
+          const userParticipant = chatForDebug.participants.find(
+            (p) => p.user_id === user.user_id && !p.leftAt
+          );
+          if (!userParticipant) {
+            socket.emit("error", {
+              message: "You are not a participant in this chat.",
+            });
+          } else if (userParticipant.role !== "admin") {
+            socket.emit("error", {
+              message: "Only chat admins can rename group chats.",
+            });
+          } else {
+            socket.emit("error", {
+              message:
+                "Chat not found, not a group chat, or user is not an admin.",
+            });
+          }
+        }
+        return;
+      }
+
+      // Update the chat name
+      chat.name = newName;
+      await chat.save();
+
+      // Broadcast the name change to all participants in the chat room
+      io.to(chatId).emit("chatNameUpdated", { chatId, newName });
+
+      console.log(
+        `Chat name updated for chat ${chatId} to "${newName}" by user ${user.user_id}`
+      );
+    } catch (error) {
+      console.error("Error updating chat name:", error);
+      socket.emit("error", { message: "Failed to update chat name" });
     }
   });
 
@@ -519,9 +695,7 @@ io.on("connection", (socket) => {
           select: "content sender_id createdAt messageType",
         })
         .sort({ lastActivity: -1 })
-        .lean();
-
-      // Add unread count and format chat data
+        .lean(); // Add unread count and format chat data
       const chatsWithDetails = await Promise.all(
         chats.map(async (chat) => {
           // Count unread messages
@@ -534,6 +708,22 @@ io.on("connection", (socket) => {
           // Get other participants (for 1-on-1 chats)
           const otherParticipants = chat.participants.filter(
             (p) => p.user_id !== user.user_id && !p.leftAt
+          );
+
+          // Populate participant details with user information
+          const participantsWithDetails = await Promise.all(
+            chat.participants.map(async (participant) => {
+              const participantUser = await User.findOne({
+                user_id: participant.user_id,
+              });
+              return {
+                ...participant,
+                firstname: participantUser?.firstname || "Unknown",
+                lastname: participantUser?.lastname || "User",
+                photo: participantUser?.photo || "/img/avatar.webp",
+                isOnline: participantUser?.isOnline || false,
+              };
+            })
           );
 
           // Generate chat name if not set
@@ -552,7 +742,8 @@ io.on("connection", (socket) => {
             ...chat,
             name: chatName,
             unreadCount,
-            participants: otherParticipants.length,
+            participants: participantsWithDetails,
+            participantCount: otherParticipants.length,
           };
         })
       );
@@ -663,6 +854,15 @@ io.on("connection", (socket) => {
     } catch (error) {
       console.error("Error during disconnect:", error);
     }
+  });
+});
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({
+    status: "OK",
+    message: "Chat server is running",
+    timestamp: new Date().toISOString(),
   });
 });
 

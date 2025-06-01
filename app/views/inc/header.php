@@ -27,7 +27,7 @@
               </div>
               <div class="notification-footer">
                 <button class="view-all-messages">
-                  <a href="<?php echo URLROOT; ?>/chat">View All Messages</a>
+                  <a href="<?php echo URLROOT; ?>/chats/messages">View All Messages</a>
                 </button>
               </div>
             </div>

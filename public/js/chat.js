@@ -1,58 +1,412 @@
 // Chat Application JavaScript
 document.addEventListener("DOMContentLoaded", function () {
+  window.chatApp = window.chatApp || {}; // Ensure namespace exists
   initializeChatApp();
 });
 
 function initializeChatApp() {
-  setupChatList();
+  // Define the cleanupEditUI function first
+  window.chatApp.cleanupEditUI = function (
+    showEditButton = true,
+    nameToSetAndUpdate = null
+  ) {
+    const chatDetailsContainer = document.querySelector(".chat-details");
+    if (!chatDetailsContainer) {
+      console.error("cleanupEditUI: .chat-details container not found");
+      return;
+    }
+    const headerNameH3 =
+      chatDetailsContainer.querySelector("h3#chat-name") ||
+      chatDetailsContainer.querySelector("h3") ||
+      document.querySelector("#chat-name");
+    const editChatNameBtn = document.getElementById("edit-chat-name-btn");
+
+    console.log(
+      "cleanupEditUI: chatDetailsContainer found:",
+      chatDetailsContainer
+    );
+    console.log("cleanupEditUI: headerNameH3:", headerNameH3);
+    console.log("cleanupEditUI: editChatNameBtn:", editChatNameBtn);
+
+    // Directly query from document to find elements within .chat-details
+    const inputField = document.querySelector(
+      ".chat-details input.edit-chat-name-input"
+    );
+    const saveBtn = document.querySelector(
+      ".chat-details button.save-chat-name-btn"
+    );
+    const cancelBtn = document.querySelector(
+      ".chat-details button.cancel-chat-name-btn"
+    );
+
+    console.log(
+      "cleanupEditUI: Elements to remove - input:",
+      inputField,
+      "save:",
+      saveBtn,
+      "cancel:",
+      cancelBtn
+    );
+
+    if (inputField) inputField.remove();
+    if (saveBtn) saveBtn.remove();
+    if (cancelBtn) cancelBtn.remove();
+
+    if (headerNameH3) {
+      if (nameToSetAndUpdate) {
+        let trimmedName = "";
+        if (typeof nameToSetAndUpdate === "string") {
+          trimmedName = nameToSetAndUpdate.trim();
+        } else {
+          trimmedName = String(nameToSetAndUpdate).trim();
+        }
+
+        if (trimmedName) {
+          headerNameH3.textContent = trimmedName;
+          console.log(
+            `cleanupEditUI: Set headerNameH3.textContent to "${trimmedName}"`
+          );
+          if (editChatNameBtn) {
+            editChatNameBtn.dataset.currentName = trimmedName;
+          }
+        } else {
+          console.warn(
+            `cleanupEditUI: Provided name "${nameToSetAndUpdate}" trims to empty. Retaining previous name: "${headerNameH3.textContent}"`
+          );
+        }
+      }
+
+      headerNameH3.style.display = "block"; // Explicitly set to 'block'
+
+      console.log(
+        `cleanupEditUI: Attempted to set headerNameH3 display to 'block'. Current textContent: "${
+          headerNameH3.textContent
+        }", Inline style: "${headerNameH3.style.display}", Computed style: "${
+          window.getComputedStyle(headerNameH3).display
+        }"`
+      );
+    } else {
+      console.error(
+        "cleanupEditUI: headerNameH3 not found, cannot update name or visibility."
+      );
+    }
+
+    if (editChatNameBtn) {
+      if (showEditButton) {
+        editChatNameBtn.style.display = "inline-block";
+      } else {
+        editChatNameBtn.style.display = "none";
+      }
+    }
+  };
+
+  // Define the handleChatNameUpdatedInUI function
+  window.chatApp.handleChatNameUpdatedInUI = function (chatId, newName) {
+    console.log(
+      `chat.js: handleChatNameUpdatedInUI called for chatId=${chatId}, newName=${newName}`
+    );
+
+    // Update the chat list item
+    const chatListItem = document.querySelector(
+      `.chat-item[data-chat-id="${chatId}"]`
+    );
+    if (chatListItem) {
+      const chatNameElement = chatListItem.querySelector(".chat-name");
+      if (chatNameElement) {
+        chatNameElement.textContent = newName;
+      }
+      chatListItem.dataset.dbName = newName; // Update the data-db-name attribute as well
+      console.log(
+        `chat.js: Updated chat list item for ${chatId} to name ${newName}`
+      );
+    } else {
+      console.warn(
+        `chat.js: Could not find chat list item for chatId=${chatId} to update name.`
+      );
+    }
+
+    // Update the chat header if this is the currently active chat
+    const activeChatItem = document.querySelector(".chat-item.active");
+    if (activeChatItem && activeChatItem.dataset.chatId === chatId) {
+      console.log(
+        `chat.js: Active chat is ${chatId}, updating header directly with newName: \"${newName}\"`
+      );
+      const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
+      if (headerNameH3) {
+        const nameToDisplay = newName ? newName.trim() : "Chat";
+        headerNameH3.textContent = nameToDisplay || "Chat"; // Use newName from server, fallback to "Chat"
+        headerNameH3.style.display = "block"; // Ensure header is visible
+        console.log(
+          `chat.js: Set active chat header to \"${headerNameH3.textContent}\" and display to 'block'`
+        );
+
+        const editBtn = document.getElementById("edit-chat-name-btn");
+        if (editBtn) {
+          // Update edit button's stored name too
+          editBtn.dataset.currentName = nameToDisplay || "Chat";
+        }
+      }
+    } else {
+      console.log(
+        `chat.js: Chat ${chatId} is not the active chat, header not updated by handleChatNameUpdatedInUI directly.`
+      );
+    }
+
+    // If the edit UI was open for this chat, clean it up using the newName from server.
+    const currentInputField = document.querySelector(
+      ".chat-details input.edit-chat-name-input"
+    );
+    if (
+      currentInputField &&
+      activeChatItem &&
+      activeChatItem.dataset.chatId === chatId
+    ) {
+      console.log(
+        "handleChatNameUpdatedInUI: Edit UI was open for the updated active chat, calling cleanupEditUI."
+      );
+      window.chatApp.cleanupEditUI(true, newName); // Pass newName from server
+    }
+  };
+
+  setupChatListEventListeners(); // Renamed for clarity
   setupChatInput();
   setupModals();
   setupSearchFunctionality();
   setupFilterTabs();
+  initializeEditChatName(); // Add this line
 }
 
-// Chat List Management
-function setupChatList() {
-  const chatItems = document.querySelectorAll(".chat-item");
+// Chat List Management using Event Delegation
+function setupChatListEventListeners() {
+  const chatListContainer = document.getElementById("chatListContainer");
 
-  chatItems.forEach((item) => {
-    item.addEventListener("click", function () {
-      // Remove active class from all items
-      chatItems.forEach((i) => i.classList.remove("active"));
-      // Add active class to clicked item
-      this.classList.add("active");
+  if (chatListContainer) {
+    chatListContainer.addEventListener("click", function (event) {
+      const chatItem = event.target.closest(".chat-item");
+      if (chatItem) {
+        // Remove active class from currently active item
+        const currentlyActive =
+          chatListContainer.querySelector(".chat-item.active");
+        if (currentlyActive) {
+          currentlyActive.classList.remove("active");
+        }
+        // Add active class to clicked item
+        chatItem.classList.add("active");
 
-      // Update chat header with selected chat info
-      updateChatHeader(this);
+        const chatId = chatItem.dataset.chatId;
+        const chatName =
+          chatItem.querySelector(".chat-name")?.textContent || "Chat";
+        // Participants data might need to be fetched or stored on the element if needed by showChatInterface
+        const participants = []; // Placeholder
 
-      // Load messages for selected chat
-      loadChatMessages(this.dataset.chatId);
+        if (window.chatWS) {
+          window.chatWS.currentChatId = chatId;
+          window.chatWS.loadMessages(chatId);
+        }
+
+        updateChatHeader(chatItem); // Updates the main chat header
+
+        if (typeof window.showChatInterface === "function") {
+          window.showChatInterface(chatId, chatName, participants); // Shows the chat panel, clears messages
+        } else {
+          console.error("showChatInterface function is not defined.");
+        }
+
+        const noChatMessage = document.getElementById("noChatMessage");
+        if (noChatMessage) {
+          noChatMessage.style.display = "none";
+        }
+      }
     });
-  });
+  }
 }
 
 // Update chat header when switching chats
 function updateChatHeader(chatItem) {
-  const chatName = chatItem.querySelector(".chat-name").textContent;
-  const avatar = chatItem.querySelector(".chat-avatar img");
+  // Use dataset for the original DB name and isGroup status
+  const dbChatNameRaw = chatItem.dataset.dbName;
+  const isGroupChat = chatItem.dataset.isGroup === "true";
+  const chatId = chatItem.dataset.chatId;
+
+  const dbChatName = dbChatNameRaw ? dbChatNameRaw.trim() : "";
+  const listItemChatNameRaw = chatItem.querySelector(".chat-name")?.textContent;
+  const listItemChatName = listItemChatNameRaw
+    ? listItemChatNameRaw.trim()
+    : "";
+
+  // chatNameToDisplay will be the dbChatName (trimmed) or listItemChatName (trimmed),
+  // falling back to "Chat" if both are empty after trimming.
+  const chatNameToDisplay = dbChatName || listItemChatName || "Chat";
+
+  const avatarSrcFromListItem = chatItem.querySelector(".chat-avatar img")?.src;
   const hasOnlineIndicator = chatItem.querySelector(".online-indicator");
 
   const headerAvatar = document.querySelector(".chat-header .chat-avatar img");
-  const headerName = document.querySelector(".chat-details h3");
+  const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
   const headerStatus = document.querySelector(".chat-details .status");
+  const editChatNameBtn = document.getElementById("edit-chat-name-btn");
 
-  if (headerAvatar && avatar) {
-    headerAvatar.src = avatar.src;
+  if (headerAvatar && avatarSrcFromListItem) {
+    headerAvatar.src = avatarSrcFromListItem;
   }
 
-  if (headerName) {
-    headerName.textContent = chatName;
+  if (headerNameH3) {
+    headerNameH3.textContent = chatNameToDisplay; // Already incorporates trimming and "Chat" fallback
+    headerNameH3.style.display = "block"; // Ensure header is visible when chat is switched
+    // Store the actually displayed name (which might be "Chat") back to the edit button's dataset
+    // if the edit button is for the currently active chat.
+    const editBtn = document.getElementById("edit-chat-name-btn");
+    if (editBtn && editBtn.dataset.chatId === chatId) {
+      // This ensures that if "Chat" is displayed, cancelling an edit reverts to "Chat"
+      // editBtn.dataset.currentName = chatNameToDisplay; // Revisit this if it causes issues with original name
+    }
+  }
+
+  if (editChatNameBtn) {
+    if (isGroupChat) {
+      editChatNameBtn.style.display = "inline-block";
+      editChatNameBtn.dataset.chatId = chatId;
+      editChatNameBtn.dataset.currentName = chatNameToDisplay; // Store the potentially friendly name
+    } else {
+      editChatNameBtn.style.display = "none";
+    }
   }
 
   if (headerStatus) {
+    // TODO: Implement actual online status fetching for individual chats
     headerStatus.textContent = hasOnlineIndicator
       ? "Online • Last seen recently"
       : "Last seen recently";
+  }
+}
+
+function initializeEditChatName() {
+  const editChatNameBtn = document.getElementById("edit-chat-name-btn");
+  const chatHeaderDetails = document.querySelector(".chat-details"); // Parent of h3 and button
+
+  if (editChatNameBtn && chatHeaderDetails) {
+    editChatNameBtn.addEventListener("click", function () {
+      // 'this' is editChatNameBtn
+      const chatId = this.dataset.chatId;
+      const currentName = this.dataset.currentName;
+      const headerNameH3 = chatHeaderDetails.querySelector("h3#chat-name");
+
+      if (!headerNameH3) {
+        console.error(
+          "Edit button clicked, but h3#chat-name not found in .chat-details."
+        );
+        return;
+      }
+
+      // Prevent multiple edit UIs if clicked rapidly
+      if (chatHeaderDetails.querySelector("input.edit-chat-name-input")) {
+        console.warn(
+          "Edit UI is already present. Aborting new edit UI creation."
+        );
+        return;
+      }
+
+      console.log(
+        `Edit chat name button clicked for chat ID: ${chatId}, current name: "${currentName}"`
+      );
+
+      // Hide H3 and edit button
+      headerNameH3.style.display = "none";
+      this.style.display = "none";
+
+      // Create input field
+      const inputField = document.createElement("input");
+      inputField.type = "text";
+      inputField.value = currentName;
+      inputField.className = "edit-chat-name-input"; // For styling and selection
+      inputField.style.marginRight = "5px";
+
+      // Create Save button
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "Save";
+      saveBtn.className = "save-chat-name-btn primary-btn"; // For styling and selection
+      saveBtn.style.marginRight = "5px";
+
+      // Create Cancel button
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.className = "cancel-chat-name-btn secondary-btn"; // For styling and selection
+
+      // Insert input and buttons after H3 (which is hidden)
+      headerNameH3.parentNode.insertBefore(
+        inputField,
+        headerNameH3.nextSibling
+      );
+      inputField.parentNode.insertBefore(saveBtn, inputField.nextSibling);
+      saveBtn.parentNode.insertBefore(cancelBtn, saveBtn.nextSibling);
+
+      inputField.focus();
+      saveBtn.addEventListener("click", () => {
+        const newName = inputField.value.trim();
+        console.log(
+          `Save button clicked. Chat ID: ${chatId}, New name: "${newName}", Current name: "${currentName}"`
+        );
+
+        // Validate the new name
+        if (!newName) {
+          console.log("New name is empty. Staying in edit mode.");
+          // Show validation error but keep edit mode active
+          if (typeof showNotification === "function") {
+            showNotification("Chat name cannot be empty", "error");
+          }
+          inputField.focus();
+          return;
+        }
+
+        if (newName === currentName) {
+          console.log("Name not changed. Closing edit mode.");
+          window.chatApp.cleanupEditUI(true, currentName);
+          return;
+        }
+
+        // Name is valid and changed, proceed with update
+        if (
+          window.chatWS &&
+          typeof window.chatWS.updateChatName === "function"
+        ) {
+          console.log(
+            `Calling window.chatWS.updateChatName("${chatId}", "${newName}")`
+          );
+
+          // Immediately update the UI to show the new name (optimistic update)
+          window.chatApp.cleanupEditUI(true, newName);
+
+          // Send the update to server
+          window.chatWS.updateChatName(chatId, newName);
+
+          // Note: If the server update fails, the WebSocket error handler should revert the name
+        } else {
+          console.error(
+            "window.chatWS.updateChatName function is not available. Reverting UI."
+          );
+          // Fallback: revert to original name
+          window.chatApp.cleanupEditUI(true, currentName);
+          if (typeof showNotification === "function") {
+            showNotification(
+              "Unable to update chat name. Not connected to server.",
+              "error"
+            );
+          }
+        }
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        console.log("Cancel button clicked. Reverting UI.");
+        window.chatApp.cleanupEditUI(true, currentName); // Revert to current name, show edit button
+      });
+    });
+  } else {
+    if (!editChatNameBtn)
+      console.error(
+        "initializeEditChatName: #edit-chat-name-btn not found at init."
+      );
+    if (!chatHeaderDetails)
+      console.error("initializeEditChatName: .chat-details not found at init.");
   }
 }
 
@@ -248,35 +602,127 @@ function setupChatInput() {
       addMessage(fileMessage, true);
     });
   }
+}
 
-  // Initialize send button state
-  updateSendButtonState();
+// Ensure this function is in the global scope or accessible where needed
+function createNewChatWithWebSocket(selectedUserIds, chatName) {
+  if (!window.chatWS || typeof window.chatWS.createChat !== "function") {
+    console.error(
+      "Chat WebSocket not initialized or createChat not available."
+    );
+    return;
+  }
+
+  if (!selectedUserIds || selectedUserIds.length === 0) {
+    console.error("No users selected for new chat.");
+    return;
+  }
+
+  if (!window.currentUser || !window.currentUser.user_id) {
+    console.error("Current user data not available.");
+    return;
+  }
+
+  const participants = [window.currentUser.user_id, ...selectedUserIds].map(
+    (id) => String(id)
+  );
+  const uniqueParticipants = [...new Set(participants)];
+
+  if (uniqueParticipants.length < 2) {
+    if (typeof showNotification === "function") {
+      showNotification("Cannot create a chat with only yourself.", "warning");
+    }
+    return;
+  }
+
+  let finalChatName = chatName;
+  if (!finalChatName) {
+    const selectedUsersDetails =
+      window.students && Array.isArray(window.students)
+        ? window.students.filter(
+            (student) =>
+              selectedUserIds.includes(String(student.id)) ||
+              selectedUserIds.includes(Number(student.id))
+          )
+        : [];
+
+    const otherParticipantNames = selectedUsersDetails
+      .map((u) => u.firstname)
+      .join(", ");
+    finalChatName = otherParticipantNames
+      ? `Chat with ${otherParticipantNames}`
+      : `Chat (${uniqueParticipants.length} participants)`;
+  }
+  const chatData = {
+    name: finalChatName,
+    participants: uniqueParticipants,
+    // Let the server determine if it's a group chat based on participant count
+    // is_group: uniqueParticipants.length > 2,
+  };
+
+  console.log("Creating new chat with data:", chatData);
+  window.chatWS.createChat(chatData);
+
+  const modal = document.getElementById("createChatModal");
+  if (modal && typeof modal.style !== "undefined") {
+    modal.style.display = "none";
+    if (typeof window.resetModalForm === "function") {
+      window.resetModalForm();
+    } else {
+      const userSearchInput = modal.querySelector("#userSearch");
+      const chatNameInput = modal.querySelector("#chatName");
+      const userListContainer = modal.querySelector(".user-list");
+      if (userSearchInput) userSearchInput.value = "";
+      if (chatNameInput) chatNameInput.value = "";
+      if (userListContainer) {
+        userListContainer.innerHTML = "";
+        const checkboxes = userListContainer.querySelectorAll(
+          'input[type="checkbox"]'
+        );
+        if (checkboxes)
+          checkboxes.forEach((checkbox) => (checkbox.checked = false));
+      }
+    }
+  }
 }
 
 // Modal Management
 function setupModals() {
   const modal = document.getElementById("createChatModal");
   const createBtn = document.getElementById("createChatBtn");
-  const closeBtn = document.querySelector(".close-button");
-  const confirmBtn = document.getElementById("confirmCreateChatBtn");
 
-  if (!modal || !createBtn || !closeBtn || !confirmBtn) return;
+  if (!modal || !createBtn) {
+    console.error(
+      "Create chat modal or button not found. Modal functionality will be limited."
+    );
+    return;
+  }
+
+  const closeBtn = modal.querySelector(".close-button");
+  const confirmBtn = document.getElementById("confirmCreateChatBtn");
+  const userSearchInput = modal.querySelector("#userSearch"); // Assuming #userSearch is inside the modal
+  const userListContainer = modal.querySelector(".users-list"); // Corrected selector
+  const chatNameInput = modal.querySelector("#chatName"); // Assuming #chatName is inside the modal
+
+  if (!closeBtn || !confirmBtn || !userListContainer) {
+    console.error(
+      "Essential modal components (close, confirm, user list) are missing."
+    );
+    return;
+  }
 
   createBtn.addEventListener("click", () => {
-    modal.style.display = "block";
-    document.body.style.overflow = "hidden"; // Prevent background scroll
+    loadUsersAndShowModal();
   });
 
   closeBtn.addEventListener("click", closeModal);
 
-  // Close modal when clicking outside
   window.addEventListener("click", (e) => {
     if (e.target === modal) {
       closeModal();
     }
   });
 
-  // Close modal on Escape key
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && modal.style.display === "block") {
       closeModal();
@@ -284,157 +730,370 @@ function setupModals() {
   });
 
   function closeModal() {
-    modal.style.display = "none";
-    document.body.style.overflow = "auto";
-    resetModalForm();
+    if (modal) modal.style.display = "none";
+    if (typeof window.resetModalForm === "function") window.resetModalForm();
   }
 
-  function resetModalForm() {
-    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach((cb) => (cb.checked = false));
-    confirmBtn.disabled = true;
-
-    const searchInput = modal.querySelector("#userSearch");
-    if (searchInput) {
-      searchInput.value = "";
-    }
-  }
-
-  // User selection handling
-  const userCheckboxes = document.querySelectorAll('input[name="user"]');
-  userCheckboxes.forEach((checkbox) => {
-    checkbox.addEventListener("change", () => {
-      const checkedBoxes = document.querySelectorAll(
-        'input[name="user"]:checked'
+  window.resetModalForm = function () {
+    if (userSearchInput) userSearchInput.value = "";
+    if (chatNameInput) chatNameInput.value = "";
+    if (userListContainer) {
+      userListContainer.innerHTML = "";
+      const checkboxes = userListContainer.querySelectorAll(
+        'input[type="checkbox"]'
       );
-      confirmBtn.disabled = checkedBoxes.length === 0;
-
-      // Update button text based on selection
-      if (checkedBoxes.length === 1) {
-        confirmBtn.textContent = "Start Conversation";
-      } else if (checkedBoxes.length > 1) {
-        confirmBtn.textContent = `Create Group (${checkedBoxes.length})`;
-      } else {
-        confirmBtn.textContent = "Start Conversation";
-      }
-    });
-  });
-  // Create chat confirmation
-  confirmBtn.addEventListener("click", () => {
-    const selectedUsers = Array.from(
-      document.querySelectorAll('input[name="user"]:checked')
-    );
-    if (selectedUsers.length > 0) {
-      // Use the real chat creation function if available
-      if (typeof createNewChatWithRealUsers === "function") {
-        createNewChatWithRealUsers(selectedUsers);
-      } else {
-        console.error("createNewChatWithRealUsers function not available");
-        // Fallback to creating chat via WebSocket directly
-        createNewChatWithWebSocket(selectedUsers);
-      }
-      closeModal();
+      if (checkboxes)
+        checkboxes.forEach((checkbox) => (checkbox.checked = false));
+      const selectedItems = userListContainer.querySelectorAll(
+        ".user-item.selected"
+      );
+      if (selectedItems)
+        selectedItems.forEach((item) => item.classList.remove("selected"));
     }
-  });
+    // Assuming filterUsers is globally available or passed appropriately
+    if (typeof filterUsersInModal === "function") {
+      filterUsersInModal("");
+    }
+  };
 
-  // User search in modal
-  const userSearch = document.getElementById("userSearch");
-  if (userSearch) {
-    userSearch.addEventListener("input", function () {
-      filterUsers(this.value);
-    });
-  }
+  async function loadUsersAndShowModal() {
+    console.log("loadUsersAndShowModal called");
+    if (!userListContainer) {
+      console.error(
+        "User list container not found in modal. Cannot load users."
+      );
+      if (typeof showNotification === "function")
+        showNotification("Error: Could not initialize user list.", "error");
+      return;
+    }
+    userListContainer.innerHTML = "<p>Loading users...</p>";
+    console.log("Set userListContainer to 'Loading users...'");
+    if (modal) modal.style.display = "block";
 
-  function filterUsers(searchTerm) {
-    const userItems = document.querySelectorAll(".user-item");
-    userItems.forEach((item) => {
-      const userName = item
-        .querySelector(".user-info h4")
-        .textContent.toLowerCase();
-      const isVisible = userName.includes(searchTerm.toLowerCase());
-      item.style.display = isVisible ? "flex" : "none";
-    });
-  }
-  function createNewChatWithWebSocket(selectedUsers) {
-    if (!window.chatWS) {
-      console.error("Chat WebSocket not initialized");
-      if (typeof showNotification !== "undefined") {
-        showNotification("Chat connection not available", "error");
+    try {
+      console.log(
+        `Fetching users from: ${window.urlRoot}/public/api/users.php`
+      );
+      const response = await fetch(`${window.urlRoot}/public/api/users.php`);
+      console.log("Fetch response received:", response.status, response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `HTTP error! status: ${response.status}, body: ${errorText}`
+        );
+        throw new Error(
+          `HTTP error! status: ${
+            response.status
+          }. Server said: ${errorText.substring(0, 100)}`
+        );
       }
+
+      const contentType = response.headers.get("content-type");
+      console.log("Response contentType:", contentType);
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text();
+        console.error(
+          "Non-JSON response from users API. ContentType:",
+          contentType,
+          "Body:",
+          textResponse
+        );
+        throw new Error(
+          `Received non-JSON response from server. Expected JSON but got ${contentType}. Check API endpoint: ${window.urlRoot}/public/api/users.php`
+        );
+      }
+
+      const result = await response.json();
+      console.log("Parsed JSON result from API:", result);
+      let users = [];
+
+      if (result && Array.isArray(result.data)) {
+        users = result.data;
+      } else if (result && Array.isArray(result.users)) {
+        users = result.users;
+      } else if (Array.isArray(result)) {
+        users = result;
+      } else {
+        console.warn(
+          "Users data is not in expected array format or is empty:",
+          result
+        );
+        // Keep users as empty array, populateModalUserList will handle it
+      }
+      console.log("Processed users before filtering current user:", users);
+
+      if (window.currentUser && window.currentUser.user_id) {
+        users = users.filter(
+          (user) => String(user.id) !== String(window.currentUser.user_id)
+        );
+        console.log("Users after filtering current user:", users);
+      } else {
+        console.warn(
+          "Current user not found or missing ID; not filtering users list against current user."
+        );
+      }
+
+      window.students = users;
+      console.log("Calling populateModalUserList with users:", users);
+      populateModalUserList(users);
+      console.log("Calling setupModalUserSelectionHandlers");
+      setupModalUserSelectionHandlers();
+    } catch (error) {
+      console.error("Failed to load users due to an error:", error);
+      if (userListContainer) {
+        userListContainer.innerHTML = `<p>Error loading users: ${error.message}. Please check console and try again.</p>`;
+      }
+      if (typeof showNotification === "function")
+        showNotification(`Error loading users: ${error.message}`, "error");
+    }
+  }
+
+  function populateModalUserList(users) {
+    if (!userListContainer) return;
+    userListContainer.innerHTML = "";
+
+    if (!users || users.length === 0) {
+      userListContainer.innerHTML =
+        "<p>No users available to create a chat with.</p>";
       return;
     }
 
-    // Get selected user IDs
-    const participantIds = selectedUsers.map((user) => parseInt(user.value));
+    users.forEach((user) => {
+      if (
+        !user ||
+        typeof user.id === "undefined" ||
+        typeof user.firstname === "undefined"
+      ) {
+        console.warn("Skipping user with missing id or firstname:", user);
+        return;
+      }
 
-    // Get user names for chat name from window.students (real data from database)
-    const selectedUserNames = participantIds.map((userId) => {
-      const student = window.students
-        ? window.students.find((s) => s.id === userId)
-        : null;
-      return student
-        ? `${student.firstname} ${student.lastname}`
-        : "Unknown User";
+      const userItem = document.createElement("div");
+      userItem.classList.add("user-item");
+      userItem.dataset.userId = user.id;
+
+      const avatarImg = document.createElement("img");
+      avatarImg.src = user.avatar || `${window.urlRoot}/img/avatar.webp`;
+      avatarImg.alt = user.firstname;
+      avatarImg.classList.add("avatar");
+      avatarImg.onerror = function () {
+        this.src = `${window.urlRoot}/img/avatar.webp`;
+      };
+
+      const userName = document.createElement("h4");
+      userName.textContent = `${user.firstname} ${user.lastname || ""}`;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = user.id;
+      checkbox.classList.add("user-select-checkbox");
+      checkbox.id = `user-checkbox-${user.id}`;
+
+      const label = document.createElement("label");
+      label.htmlFor = checkbox.id;
+      label.classList.add("user-item-label");
+      label.appendChild(avatarImg);
+      label.appendChild(userName);
+
+      userItem.appendChild(checkbox);
+      userItem.appendChild(label);
+
+      userListContainer.appendChild(userItem);
+    });
+  }
+
+  function setupModalUserSelectionHandlers() {
+    if (!userListContainer) return;
+    const userItems = userListContainer.querySelectorAll(".user-item");
+    const confirmBtn = document.getElementById("confirmCreateChatBtn"); // Ensure confirmBtn is accessible
+
+    userItems.forEach((item) => {
+      const checkbox = item.querySelector(".user-select-checkbox");
+      if (checkbox) {
+        checkbox.addEventListener("change", function () {
+          item.classList.toggle("selected", this.checked);
+          if (confirmBtn) {
+            // Check if confirmBtn exists
+            const selectedCheckboxes = userListContainer.querySelectorAll(
+              ".user-select-checkbox:checked"
+            );
+            confirmBtn.disabled = selectedCheckboxes.length === 0;
+          }
+        });
+      }
     });
 
-    // Determine chat name and type
-    const isGroup = participantIds.length > 1;
-    const chatName = isGroup
-      ? `Group Chat (${selectedUserNames.join(", ")})`
-      : selectedUserNames[0];
-
-    console.log("Creating chat with participants:", participantIds);
-    console.log("Chat name:", chatName);
-    console.log("Using real student data:", window.students ? "Yes" : "No");
-
-    // Create chat using WebSocket
-    window.chatWS.createChat(participantIds, chatName, isGroup);
-
-    // Show success notification
-    if (typeof showNotification !== "undefined") {
-      showNotification("Creating new conversation...", "info");
+    // Initial state of the button
+    if (confirmBtn) {
+      const selectedCheckboxes = userListContainer.querySelectorAll(
+        ".user-select-checkbox:checked"
+      );
+      confirmBtn.disabled = selectedCheckboxes.length === 0;
     }
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => {
+      if (!userListContainer) return;
+      const selectedCheckboxes = userListContainer.querySelectorAll(
+        ".user-select-checkbox:checked"
+      );
+      const selectedUserIds = Array.from(selectedCheckboxes).map(
+        (cb) => cb.value
+      );
+
+      let chatNameValue = "";
+      if (chatNameInput && chatNameInput.value.trim() !== "") {
+        chatNameValue = chatNameInput.value.trim();
+      }
+
+      if (selectedUserIds.length === 0) {
+        if (typeof showNotification === "function")
+          showNotification("Please select at least one user.", "warning");
+        return;
+      }
+
+      if (typeof createNewChatWithWebSocket === "function") {
+        createNewChatWithWebSocket(selectedUserIds, chatNameValue);
+      } else {
+        console.error("createNewChatWithWebSocket function is not defined.");
+        if (typeof showNotification === "function")
+          showNotification("Error: Chat creation function not found.", "error");
+      }
+    });
+  } else {
+    console.error("Confirm button not found in modal.");
+  }
+
+  if (userSearchInput) {
+    userSearchInput.addEventListener("input", (e) => {
+      if (typeof filterUsersInModal === "function") {
+        filterUsersInModal(e.target.value.toLowerCase());
+      } else {
+        console.warn(
+          "filterUsersInModal function is not available for user search input."
+        );
+      }
+    });
+  } else {
+    console.warn("User search input not found in modal.");
+  }
+
+  // Renamed to avoid conflict if there's another filterUsers globally
+  function filterUsersInModal(searchTerm) {
+    console.log(`filterUsersInModal called with searchTerm: '${searchTerm}'`);
+    if (!userListContainer) {
+      console.warn("filterUsersInModal: userListContainer not found.");
+      return;
+    }
+    const userItems = userListContainer.querySelectorAll(".user-item");
+    console.log(`filterUsersInModal: Found ${userItems.length} user items.`);
+
+    if (userItems.length === 0 && searchTerm === "") {
+      // If called with empty search term (e.g. on reset) and list is empty, do nothing.
+    } else if (userItems.length === 0) {
+      console.warn("filterUsersInModal: No user items to filter.");
+    }
+
+    userItems.forEach((item, index) => {
+      const userNameElement = item.querySelector("h4");
+      if (userNameElement) {
+        const userName = userNameElement.textContent.toLowerCase();
+        if (userName.includes(searchTerm)) {
+          item.style.display = "";
+        } else {
+          item.style.display = "none";
+        }
+      } else {
+        console.warn(
+          `filterUsersInModal: User item at index ${index} is missing h4 element.`
+        );
+      }
+    });
   }
 }
 
-// Search Functionality
+// Search Functionality (for main chat list)
 function setupSearchFunctionality() {
-  const searchBtn = document.getElementById("searchChatsBtn");
-  const searchContainer = document.getElementById("searchContainer");
-  const searchInput = document.getElementById("searchInput");
+  const searchInput = document.getElementById("searchInput"); // Changed "chatSearchInput" to "searchInput"
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      if (typeof filterChats === "function") {
+        filterChats(e.target.value.toLowerCase());
+      } else {
+        console.warn(
+          "filterChats function is not available for main chat search."
+        );
+      }
+    });
+  } else {
+    console.warn("Chat search input not found for main search functionality.");
+  }
+}
 
-  if (!searchBtn || !searchContainer || !searchInput) return;
+function filterChats(searchTerm, chatListContainerSelector = ".chat-list ul") {
+  const chatListContainer = document.querySelector(chatListContainerSelector);
+  if (!chatListContainer) {
+    console.error(
+      `Chat list container not found with selector: ${chatListContainerSelector}`
+    );
+    return;
+  }
+  const chatItems = chatListContainer.querySelectorAll(".chat-item");
+  let visibleChats = 0;
 
-  searchBtn.addEventListener("click", () => {
-    const isVisible = searchContainer.style.display !== "none";
-    searchContainer.style.display = isVisible ? "none" : "block";
+  chatItems.forEach((item) => {
+    const chatNameElement = item.querySelector(".chat-name");
+    const lastMessageElement = item.querySelector(
+      ".last-message p, .last-message span"
+    );
 
-    if (!isVisible) {
-      searchInput.focus();
+    let match = false;
+    if (
+      chatNameElement &&
+      chatNameElement.textContent.toLowerCase().includes(searchTerm)
+    ) {
+      match = true;
+    }
+    if (
+      lastMessageElement &&
+      lastMessageElement.textContent &&
+      lastMessageElement.textContent.toLowerCase().includes(searchTerm)
+    ) {
+      match = true;
+    }
+
+    if (match) {
+      item.style.display = "";
+      visibleChats++;
     } else {
-      searchInput.value = "";
-      filterChats(""); // Reset filter
+      item.style.display = "none";
     }
   });
 
-  searchInput.addEventListener("input", function () {
-    filterChats(this.value);
-  });
-
-  function filterChats(searchTerm) {
-    const chatItems = document.querySelectorAll(".chat-item");
-    chatItems.forEach((item) => {
-      const chatName = item
-        .querySelector(".chat-name")
-        .textContent.toLowerCase();
-      const lastMessage = item
-        .querySelector(".last-message")
-        .textContent.toLowerCase();
-      const isVisible =
-        chatName.includes(searchTerm.toLowerCase()) ||
-        lastMessage.includes(searchTerm.toLowerCase());
-      item.style.display = isVisible ? "flex" : "none";
-    });
+  const noResultsMessageContainer = chatListContainer.parentNode;
+  if (!noResultsMessageContainer) return;
+  let noResultsMessage = noResultsMessageContainer.querySelector(
+    ".no-chat-search-results"
+  );
+  if (visibleChats === 0 && searchTerm.length > 0) {
+    if (!noResultsMessage) {
+      noResultsMessage = document.createElement("p");
+      noResultsMessage.className = "no-chat-search-results";
+      noResultsMessage.textContent = "No chats match your search.";
+      if (chatListContainer.nextSibling) {
+        chatListContainer.parentNode.insertBefore(
+          noResultsMessage,
+          chatListContainer.nextSibling
+        );
+      } else {
+        chatListContainer.parentNode.appendChild(noResultsMessage);
+      }
+    }
+    noResultsMessage.style.display = "block";
+  } else if (noResultsMessage) {
+    noResultsMessage.style.display = "none";
   }
 }
 
@@ -456,1449 +1115,97 @@ function setupFilterTabs() {
   });
 
   function applyFilter(filter) {
-    const chatItems = document.querySelectorAll(".chat-item");
+    const chatItems = document.querySelectorAll(
+      "#chatListContainer .chat-item"
+    );
+    let visibleChats = 0;
 
     chatItems.forEach((item) => {
-      let isVisible = true;
+      let isVisible = false;
 
       switch (filter) {
         case "all":
           isVisible = true;
           break;
         case "unread":
-          isVisible = item.querySelector(".unread-count") !== null;
+          const unreadBadge = item.querySelector(".unread-badge");
+          isVisible = unreadBadge && parseInt(unreadBadge.textContent) > 0;
           break;
         case "groups":
-          isVisible = item.querySelector(".group-avatar") !== null;
+          isVisible = item.dataset.isGroup === "true";
           break;
         default:
           isVisible = true;
+          break;
       }
 
-      item.style.display = isVisible ? "flex" : "none";
-    });
-  }
-}
-
-// Load chat messages (simulated)
-function loadChatMessages(chatId) {
-  const chatMessages = document.getElementById("chat-messages");
-  if (!chatMessages) return;
-
-  // Clear current messages except date divider
-  const messages = chatMessages.querySelectorAll(".message");
-  messages.forEach((msg) => msg.remove());
-
-  // Hide typing indicator
-  const typingIndicator = document.querySelector(".typing-indicator");
-  if (typingIndicator) {
-    typingIndicator.style.display = "none";
-  }
-
-  // Load messages based on chat ID (simulated data)
-  const mockMessages = getMockMessages(chatId);
-
-  mockMessages.forEach((msg, index) => {
-    setTimeout(() => {
-      addMessage(msg.text, msg.isSelf, msg.time);
-    }, index * 100); // Stagger message loading for smooth effect
-  });
-}
-
-// Mock message data
-function getMockMessages(chatId) {
-  const messageSets = {
-    1: [
-      { text: "Hey! How are you doing?", isSelf: false, time: "10:30 AM" },
-      {
-        text: "Hi there! I'm doing great, thanks for asking. How about you?",
-        isSelf: true,
-        time: "10:32 AM",
-      },
-      {
-        text: "I'm doing well too! Working on some exciting projects.",
-        isSelf: false,
-        time: "10:35 AM",
-      },
-      {
-        text: "Yes! The new features look amazing 🚀",
-        isSelf: true,
-        time: "10:36 AM",
-      },
-    ],
-    2: [
-      {
-        text: "Good morning! How's the project coming along?",
-        isSelf: false,
-        time: "9:15 AM",
-      },
-      {
-        text: "Morning! It's going really well. We're ahead of schedule actually.",
-        isSelf: true,
-        time: "9:18 AM",
-      },
-      {
-        text: "That's fantastic news! The team is doing great work.",
-        isSelf: false,
-        time: "9:20 AM",
-      },
-      {
-        text: "Thanks for the update on the project status",
-        isSelf: false,
-        time: "1:15 PM",
-      },
-    ],
-    3: [
-      {
-        text: "Team meeting reminder: Tomorrow at 10 AM",
-        isSelf: false,
-        time: "11:30 AM",
-      },
-      {
-        text: "Thanks for the reminder! I'll be there.",
-        isSelf: true,
-        time: "11:32 AM",
-      },
-      {
-        text: "Let's schedule a meeting for tomorrow",
-        isSelf: false,
-        time: "12:45 PM",
-      },
-    ],
-    default: [
-      { text: "Welcome to the conversation!", isSelf: false, time: "now" },
-    ],
-  };
-
-  return messageSets[chatId] || messageSets.default;
-}
-
-// Add message function (enhanced version)
-function addMessage(text, isSelf = false, timestamp = null) {
-  const chatMessages = document.getElementById("chat-messages");
-  if (!chatMessages) return;
-
-  const messageDiv = document.createElement("div");
-  messageDiv.className = `message ${isSelf ? "self" : "other"}`;
-
-  const currentTime =
-    timestamp ||
-    new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+      item.style.display = isVisible ? "" : "none";
+      if (isVisible) {
+        visibleChats++;
+      }
     });
 
-  const avatarHtml = !isSelf
-    ? `
-        <div class="message-avatar">
-            <img src="${getAvatarUrl()}" alt="Avatar">
-        </div>
-    `
-    : "";
+    const chatListContainer = document.getElementById("chatListContainer");
+    const noChatMessage = document.getElementById("noChatMessage"); // General no chats message
+    let noFilterResultsMessage =
+      chatListContainer.querySelector(".no-filter-results");
 
-  messageDiv.innerHTML = `
-        ${avatarHtml}
-        <div class="message-content">
-            <div class="message-bubble">
-                <p>${escapeHtml(text)}</p>
-            </div>
-            <div class="message-info">
-                <span class="message-time">${currentTime}</span>
-                ${isSelf ? '<span class="message-status">✓</span>' : ""}
-            </div>
-        </div>
-    `;
-
-  chatMessages.appendChild(messageDiv);
-
-  // Smooth scroll to bottom
-  requestAnimationFrame(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-}
-
-// Utility functions
-function getAvatarUrl() {
-  return (
-    document.querySelector(".chat-header .chat-avatar img")?.src ||
-    "/img/avatar.webp"
-  );
-}
-
-function escapeHtml(text) {
-  const map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
-
-// Notification system
-function showNotification(message, type = "info") {
-  const notification = document.createElement("div");
-  notification.className = `chat-notification ${type}`;
-  notification.textContent = message;
-
-  notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--accent-clr);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 1001;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-    `;
-
-  document.body.appendChild(notification);
-
-  // Animate in
-  requestAnimationFrame(() => {
-    notification.style.transform = "translateX(0)";
-  });
-
-  // Remove after 3 seconds
-  setTimeout(() => {
-    notification.style.transform = "translateX(100%)";
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 300);
-  }, 3000);
-}
-
-// Enhanced Chat Features
-let currentReplyTo = null;
-let isRecording = false;
-let recordingStartTime = null;
-let recordingTimer = null;
-
-// Message Reactions
-function toggleReactionPicker(messageId) {
-  const picker = document.getElementById("reactionPicker");
-  const message = document.querySelector(`[data-message-id="${messageId}"]`);
-
-  if (!picker || !message) return;
-
-  // Position the picker near the message
-  const rect = message.getBoundingClientRect();
-  picker.style.left = rect.left + "px";
-  picker.style.top = rect.top - picker.offsetHeight - 10 + "px";
-
-  // Store current message ID for reaction
-  picker.dataset.currentMessage = messageId;
-
-  // Toggle visibility
-  if (picker.style.display === "none" || !picker.style.display) {
-    picker.style.display = "flex";
-    // Hide after 3 seconds if no interaction
-    setTimeout(() => {
-      if (picker.style.display === "flex") {
-        picker.style.display = "none";
+    // Hide general no chats message if filters are active or search is active
+    if (noChatMessage) {
+      const searchInput = document.getElementById("searchInput");
+      const isActiveFilter = filter !== "all";
+      const isActiveSearch = searchInput && searchInput.value.trim().length > 0;
+      if (isActiveFilter || isActiveSearch) {
+        noChatMessage.style.display = "none";
       }
-    }, 3000);
-  } else {
-    picker.style.display = "none";
-  }
-}
-
-function addReaction(emoji) {
-  const picker = document.getElementById("reactionPicker");
-  const messageId = picker.dataset.currentMessage;
-  const message = document.querySelector(`[data-message-id="${messageId}"]`);
-
-  if (!message) return;
-
-  let reactionsContainer = message.querySelector(".message-reactions");
-  if (!reactionsContainer) {
-    reactionsContainer = document.createElement("div");
-    reactionsContainer.className = "message-reactions";
-    message.appendChild(reactionsContainer);
-  }
-
-  // Check if reaction already exists
-  let existingReaction = reactionsContainer.querySelector(
-    `[data-reaction="${emoji}"]`
-  );
-  if (existingReaction) {
-    // Increment count
-    const countSpan = existingReaction.querySelector(".count");
-    const currentCount = parseInt(countSpan.textContent);
-    countSpan.textContent = currentCount + 1;
-  } else {
-    // Add new reaction
-    const reactionElement = document.createElement("span");
-    reactionElement.className = "reaction";
-    reactionElement.dataset.reaction = emoji;
-    reactionElement.innerHTML = `${emoji} <span class="count">1</span>`;
-    reactionsContainer.appendChild(reactionElement);
-  }
-
-  // Hide picker
-  picker.style.display = "none";
-
-  // Add animation
-  if (existingReaction) {
-    existingReaction.style.transform = "scale(1.2)";
-    setTimeout(() => {
-      existingReaction.style.transform = "scale(1)";
-    }, 200);
-  }
-}
-
-// Reply Functionality
-function replyToMessage(messageId) {
-  const message = document.querySelector(`[data-message-id="${messageId}"]`);
-  const messageText = message.querySelector("p").textContent;
-  const messageSender = message.closest(".message").classList.contains("self")
-    ? "You"
-    : "John Doe";
-
-  const replyPreview = document.getElementById("replyPreview");
-  const replyTo = replyPreview.querySelector(".reply-to strong");
-  const replyMessage = replyPreview.querySelector(".reply-message");
-
-  replyTo.textContent = messageSender;
-  replyMessage.textContent =
-    messageText.length > 50
-      ? messageText.substring(0, 50) + "..."
-      : messageText;
-
-  replyPreview.style.display = "block";
-  currentReplyTo = { messageId, messageSender, messageText };
-
-  // Focus on input
-  document.getElementById("message-input").focus();
-}
-
-function cancelReply() {
-  document.getElementById("replyPreview").style.display = "none";
-  currentReplyTo = null;
-}
-
-// Attachment Menu
-function toggleAttachmentMenu() {
-  const menu = document.getElementById("attachmentMenu");
-  menu.style.display =
-    menu.style.display === "none" || !menu.style.display ? "block" : "none";
-
-  // Hide after 5 seconds if no interaction
-  if (menu.style.display === "block") {
-    setTimeout(() => {
-      if (menu.style.display === "block") {
-        menu.style.display = "none";
-      }
-    }, 5000);
-  }
-}
-
-function selectFiles(type) {
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.multiple = true;
-
-  if (type === "image") {
-    fileInput.accept = "image/*";
-  } else if (type === "file") {
-    fileInput.accept = ".pdf,.doc,.docx,.txt,.xlsx,.pptx";
-  }
-
-  fileInput.onchange = function () {
-    handleFileUpload(this.files, type);
-  };
-
-  fileInput.click();
-  document.getElementById("attachmentMenu").style.display = "none";
-}
-
-function handleFileUpload(files, type) {
-  Array.from(files).forEach((file) => {
-    if (type === "image" && file.type.startsWith("image/")) {
-      addImageMessage(file);
-    } else {
-      addFileMessage(file);
-    }
-  });
-}
-
-function addImageMessage(file) {
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const messageDiv = document.createElement("div");
-    messageDiv.className = "message self";
-
-    const currentTime = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    messageDiv.innerHTML = `
-      <div class="message-content">
-        <div class="message-bubble media-message" data-message-id="${Date.now()}">
-          <div class="media-preview">
-            <img src="${
-              e.target.result
-            }" alt="Shared image" onclick="openImageModal('${
-      e.target.result
-    }')">
-            <div class="media-overlay">
-              <button class="media-download" title="Download">⬇</button>
-            </div>
-          </div>
-          <p>${file.name}</p>
-        </div>
-        <div class="message-info">
-          <span class="message-time">${currentTime}</span>
-          <span class="message-status">✓</span>
-        </div>
-      </div>
-    `;
-
-    document.getElementById("chat-messages").appendChild(messageDiv);
-    scrollToBottom();
-  };
-  reader.readAsDataURL(file);
-}
-
-function addFileMessage(file) {
-  const fileSize = formatFileSize(file.size);
-  const fileIcon = getFileIcon(file.name);
-
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message self";
-
-  const currentTime = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  messageDiv.innerHTML = `
-    <div class="message-content">
-      <div class="message-bubble" data-message-id="${Date.now()}">
-        <div class="file-attachment">
-          <div class="file-icon">${fileIcon}</div>
-          <div class="file-info">
-            <div class="file-name">${file.name}</div>
-            <div class="file-size">${fileSize}</div>
-          </div>
-          <button class="file-download" onclick="downloadFile('${
-            file.name
-          }')">⬇</button>
-        </div>
-      </div>
-      <div class="message-info">
-        <span class="message-time">${currentTime}</span>
-        <span class="message-status">✓</span>
-      </div>
-    </div>
-  `;
-
-  document.getElementById("chat-messages").appendChild(messageDiv);
-  scrollToBottom();
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
-
-function getFileIcon(filename) {
-  const ext = filename.split(".").pop().toLowerCase();
-  const icons = {
-    pdf: "📄",
-    doc: "📝",
-    docx: "📝",
-    txt: "📄",
-    xlsx: "📊",
-    pptx: "📊",
-    zip: "🗜️",
-    mp3: "🎵",
-    mp4: "🎬",
-  };
-  return icons[ext] || "📎";
-}
-
-// Image Modal
-function openImageModal(src) {
-  const modal = document.getElementById("imageModal");
-  const modalImg = document.getElementById("modalImage");
-  modal.style.display = "block";
-  modalImg.src = src;
-}
-
-function closeImageModal() {
-  document.getElementById("imageModal").style.display = "none";
-}
-
-// Emoji Picker
-function toggleEmojiPicker() {
-  const picker = document.getElementById("emojiPicker");
-  picker.style.display =
-    picker.style.display === "none" || !picker.style.display ? "block" : "none";
-}
-
-function insertEmoji(emoji) {
-  const input = document.getElementById("message-input");
-  const cursorPos = input.selectionStart;
-  const textBefore = input.value.substring(0, cursorPos);
-  const textAfter = input.value.substring(cursorPos);
-
-  input.value = textBefore + emoji + textAfter;
-  input.focus();
-  input.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
-
-  // Hide emoji picker
-  document.getElementById("emojiPicker").style.display = "none";
-
-  // Trigger input event to resize textarea
-  input.dispatchEvent(new Event("input"));
-}
-
-// Voice Recording
-function startVoiceRecording() {
-  document.getElementById("attachmentMenu").style.display = "none";
-  toggleVoiceRecording();
-}
-
-function toggleVoiceRecording() {
-  if (!isRecording) {
-    startRecording();
-  } else {
-    stopRecording();
-  }
-}
-
-function startRecording() {
-  isRecording = true;
-  recordingStartTime = Date.now();
-
-  // Show recording overlay
-  document.getElementById("voiceRecordingOverlay").style.display = "flex";
-
-  // Start timer
-  recordingTimer = setInterval(updateRecordingTime, 1000);
-
-  // Hide send button, show voice button
-  document.getElementById("send-btn").style.display = "none";
-  document.getElementById("voiceRecordBtn").style.display = "flex";
-
-  // Request microphone access (in real app)
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        // Handle audio recording here
-        console.log("Recording started");
-      })
-      .catch((err) => {
-        console.error("Microphone access denied:", err);
-        cancelVoiceRecording();
-      });
-  }
-}
-
-function updateRecordingTime() {
-  const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-  const minutes = Math.floor(elapsed / 60);
-  const seconds = elapsed % 60;
-  const timeDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-  const timeElement = document.getElementById("recordingTime");
-  if (timeElement) {
-    timeElement.textContent = timeDisplay;
-  }
-}
-
-function stopVoiceRecording() {
-  stopRecording();
-
-  // Add voice message
-  const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
-  addVoiceMessage(duration);
-}
-
-function cancelVoiceRecording() {
-  stopRecording();
-}
-
-function stopRecording() {
-  isRecording = false;
-
-  // Clear timer
-  if (recordingTimer) {
-    clearInterval(recordingTimer);
-    recordingTimer = null;
-  }
-
-  // Hide recording overlay
-  document.getElementById("voiceRecordingOverlay").style.display = "none";
-
-  // Show send button, hide voice button
-  document.getElementById("send-btn").style.display = "flex";
-  document.getElementById("voiceRecordBtn").style.display = "none";
-}
-
-function addVoiceMessage(duration) {
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message self";
-
-  const currentTime = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const minutes = Math.floor(duration / 60);
-  const seconds = duration % 60;
-  const durationDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-  // Generate random waveform
-  const waveformBars = Array.from(
-    { length: 8 },
-    () =>
-      `<div class="wave-bar" style="height: ${
-        Math.floor(Math.random() * 12) + 6
-      }px;"></div>`
-  ).join("");
-
-  messageDiv.innerHTML = `
-    <div class="message-content">
-      <div class="message-bubble voice-message" data-message-id="${Date.now()}">
-        <div class="voice-player">
-          <button class="voice-play-btn" onclick="toggleVoicePlayback(this)">
-            <svg width="16" height="16" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-          <div class="voice-waveform">
-            ${waveformBars}
-          </div>
-          <span class="voice-duration">${durationDisplay}</span>
-        </div>
-      </div>
-      <div class="message-info">
-        <span class="message-time">${currentTime}</span>
-        <span class="message-status">✓</span>
-      </div>
-    </div>
-  `;
-
-  document.getElementById("chat-messages").appendChild(messageDiv);
-  scrollToBottom();
-}
-
-function toggleVoicePlayback(button) {
-  const isPlaying = button.classList.contains("playing");
-
-  if (isPlaying) {
-    // Stop playback
-    button.classList.remove("playing");
-    button.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-    `;
-
-    // Stop waveform animation
-    const waveform = button.parentElement.querySelector(".voice-waveform");
-    waveform.querySelectorAll(".wave-bar").forEach((bar) => {
-      bar.classList.remove("active");
-    });
-  } else {
-    // Start playback
-    button.classList.add("playing");
-    button.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24">
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-      </svg>
-    `;
-
-    // Animate waveform
-    const waveform = button.parentElement.querySelector(".voice-waveform");
-    const bars = waveform.querySelectorAll(".wave-bar");
-    let currentBar = 0;
-
-    const animateWaveform = setInterval(() => {
-      bars.forEach((bar) => bar.classList.remove("active"));
-      bars[currentBar].classList.add("active");
-      currentBar = (currentBar + 1) % bars.length;
-    }, 200);
-
-    // Stop after duration (simulate playback)
-    setTimeout(() => {
-      clearInterval(animateWaveform);
-      button.click(); // Stop playback
-    }, 3000);
-  }
-}
-
-// Enhanced send message function
-function sendMessage() {
-  const messageInput = document.getElementById("message-input");
-  const message = messageInput.value.trim();
-
-  if (message) {
-    let messageContent = message;
-    let replyData = null;
-
-    // Handle reply
-    if (currentReplyTo) {
-      replyData = currentReplyTo;
-      cancelReply();
     }
 
-    addMessage(messageContent, true, null, replyData);
-    messageInput.value = "";
-    messageInput.style.height = "auto";
-    updateSendButtonState();
-
-    // Simulate typing indicator
-    showTypingIndicator();
-
-    // Simulate response after delay
-    setTimeout(() => {
-      hideTypingIndicator();
-      simulateResponse(message);
-    }, 1000 + Math.random() * 2000);
-  }
-}
-
-// Enhanced addMessage function
-function addMessage(text, isSelf = false, timestamp = null, replyData = null) {
-  const messageDiv = document.createElement("div");
-  messageDiv.className = `message ${isSelf ? "self" : "other"}`;
-
-  const currentTime =
-    timestamp ||
-    new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const messageId = Date.now();
-
-  const avatarHtml = !isSelf
-    ? `
-    <div class="message-avatar">
-      <img src="${getAvatarUrl()}" alt="Avatar">
-    </div>
-  `
-    : "";
-
-  const replyHtml = replyData
-    ? `
-    <div class="message-reply">
-      <div class="reply-indicator"></div>
-      <div class="reply-content">
-        <div class="reply-author">${replyData.messageSender}</div>
-        <div class="reply-text">${
-          replyData.messageText.length > 30
-            ? replyData.messageText.substring(0, 30) + "..."
-            : replyData.messageText
-        }</div>
-      </div>
-    </div>
-  `
-    : "";
-
-  const actionsHtml = !isSelf
-    ? `
-    <span class="message-actions">
-      <button class="action-btn-small" onclick="toggleReactionPicker(${messageId})" title="React">😊</button>
-      <button class="action-btn-small" onclick="replyToMessage(${messageId})" title="Reply">↩</button>
-    </span>
-  `
-    : "";
-
-  messageDiv.innerHTML = `
-    ${avatarHtml}
-    <div class="message-content">
-      <div class="message-bubble" data-message-id="${messageId}">
-        ${replyHtml}
-        <p>${escapeHtml(text)}</p>
-      </div>
-      <div class="message-info">
-        <span class="message-time">${currentTime}</span>
-        ${isSelf ? '<span class="message-status">✓</span>' : actionsHtml}
-      </div>
-    </div>
-  `;
-
-  const chatMessages = document.getElementById("chat-messages");
-  chatMessages.appendChild(messageDiv);
-  scrollToBottom();
-
-  // Animate message appearance
-  messageDiv.style.opacity = "0";
-  messageDiv.style.transform = "translateY(20px)";
-
-  requestAnimationFrame(() => {
-    messageDiv.style.transition = "all 0.3s ease";
-    messageDiv.style.opacity = "1";
-    messageDiv.style.transform = "translateY(0)";
-  });
-}
-
-// Close dropdowns when clicking outside
-document.addEventListener("click", function (e) {
-  const attachmentMenu = document.getElementById("attachmentMenu");
-  const emojiPicker = document.getElementById("emojiPicker");
-  const reactionPicker = document.getElementById("reactionPicker");
-
-  if (!e.target.closest(".input-action-btn") && attachmentMenu) {
-    attachmentMenu.style.display = "none";
-  }
-
-  if (!e.target.closest(".emoji-btn") && emojiPicker) {
-    emojiPicker.style.display = "none";
-  }
-
-  if (!e.target.closest(".action-btn-small") && reactionPicker) {
-    reactionPicker.style.display = "none";
-  }
-});
-
-// Enhanced Chatlist Management
-let pinnedChats = new Set([3]); // Example: chat 3 is pinned
-let mutedChats = new Set([5]); // Example: chat 5 is muted
-let archivedChats = new Set();
-
-// Chat Menu Functions
-function toggleChatMenu(chatId) {
-  const menu = document.getElementById(`chatMenu${chatId}`);
-  const allMenus = document.querySelectorAll(".chat-menu");
-
-  // Close all other menus
-  allMenus.forEach((m) => {
-    if (m !== menu) m.style.display = "none";
-  });
-
-  // Toggle current menu
-  menu.style.display = menu.style.display === "none" ? "block" : "none";
-}
-
-function pinChat(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-  const chatName = chatItem.querySelector(".chat-name");
-
-  if (!pinnedChats.has(chatId)) {
-    pinnedChats.add(chatId);
-    chatItem.classList.add("pinned");
-
-    // Add pin icon if not already there
-    if (!chatName.textContent.includes("📌")) {
-      chatName.innerHTML = "📌 " + chatName.innerHTML;
+    if (visibleChats === 0 && filter !== "all") {
+      if (!noFilterResultsMessage) {
+        noFilterResultsMessage = document.createElement("div");
+        noFilterResultsMessage.className = "no-filter-results"; // Specific message for no filter results
+        noFilterResultsMessage.style.textAlign = "center";
+        noFilterResultsMessage.style.padding = "20px";
+        noFilterResultsMessage.innerHTML = `<p>No chats match the current filter.</p>`;
+        // Prepend to chatListContainer so it appears above any (hidden) chat items
+        chatListContainer.insertBefore(
+          noFilterResultsMessage,
+          chatListContainer.firstChild
+        );
+      }
+      noFilterResultsMessage.style.display = "block";
+    } else if (noFilterResultsMessage) {
+      noFilterResultsMessage.style.display = "none";
     }
 
-    // Move to top of list
-    const chatList = document.querySelector(".chat-list");
-    chatList.insertBefore(chatItem, chatList.firstChild);
-
-    showNotification("Chat pinned", "success");
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function unpinChat(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-  const chatName = chatItem.querySelector(".chat-name");
-
-  if (pinnedChats.has(chatId)) {
-    pinnedChats.delete(chatId);
-    chatItem.classList.remove("pinned");
-
-    // Remove pin icon
-    chatName.innerHTML = chatName.innerHTML.replace("📌 ", "");
-
-    showNotification("Chat unpinned", "info");
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function muteChat(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-  const avatar = chatItem.querySelector(".chat-avatar");
-
-  if (!mutedChats.has(chatId)) {
-    mutedChats.add(chatId);
-    chatItem.classList.add("muted");
-
-    // Add mute indicator
-    if (!avatar.querySelector(".muted-indicator")) {
-      const muteIndicator = document.createElement("div");
-      muteIndicator.className = "muted-indicator";
-      muteIndicator.innerHTML = "🔇";
-      avatar.appendChild(muteIndicator);
+    // If switching back to 'all' and no chats at all, show the general noChatMessage
+    if (filter === "all" && chatItems.length === 0 && noChatMessage) {
+      noChatMessage.style.display = "block"; // Or 'flex' depending on its original display type
     }
-
-    showNotification("Chat muted", "info");
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function unmuteChat(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-  const muteIndicator = chatItem.querySelector(".muted-indicator");
-
-  if (mutedChats.has(chatId)) {
-    mutedChats.delete(chatId);
-    chatItem.classList.remove("muted");
-
-    // Remove mute indicator
-    if (muteIndicator) {
-      muteIndicator.remove();
-    }
-
-    showNotification("Chat unmuted", "success");
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function archiveChat(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-
-  if (!archivedChats.has(chatId)) {
-    archivedChats.add(chatId);
-
-    // Animate out
-    chatItem.style.transform = "translateX(-100%)";
-    chatItem.style.opacity = "0";
-
-    setTimeout(() => {
-      chatItem.style.display = "none";
-      showNotification("Chat archived", "info");
-    }, 300);
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function deleteChat(chatId) {
-  if (
-    confirm(
-      "Are you sure you want to delete this chat? This action cannot be undone."
-    )
-  ) {
-    const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-
-    // Animate out
-    chatItem.style.transform = "scale(0.8)";
-    chatItem.style.opacity = "0";
-
-    setTimeout(() => {
-      chatItem.remove();
-      showNotification("Chat deleted", "error");
-    }, 300);
-  }
-
-  toggleChatMenu(chatId);
-}
-
-function leaveGroup(chatId) {
-  if (confirm("Are you sure you want to leave this group?")) {
-    const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-
-    // Animate out
-    chatItem.style.transform = "translateX(-100%)";
-    chatItem.style.opacity = "0";
-
-    setTimeout(() => {
-      chatItem.remove();
-      showNotification("Left group", "info");
-    }, 300);
-  }
-
-  toggleChatMenu(chatId);
-}
-
-// Enhanced Search Functionality
-function setupEnhancedSearch() {
-  const searchInput = document.getElementById("searchInput");
-  const chatItems = document.querySelectorAll(".chat-item");
-
-  if (!searchInput) return;
-
-  let searchTimeout;
-
-  searchInput.addEventListener("input", function () {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      performSearch(this.value.toLowerCase(), chatItems);
-    }, 300);
-  });
-
-  // Add keyboard navigation
-  searchInput.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      navigateSearchResults(e.key === "ArrowDown" ? 1 : -1);
-    } else if (e.key === "Enter") {
-      selectHighlightedChat();
-    }
-  });
-}
-
-function performSearch(query, chatItems) {
-  let visibleCount = 0;
-
-  chatItems.forEach((item, index) => {
-    const chatName = item.querySelector(".chat-name").textContent.toLowerCase();
-    const lastMessage = item
-      .querySelector(".last-message")
-      .textContent.toLowerCase();
-
-    const matches = chatName.includes(query) || lastMessage.includes(query);
-
-    if (matches || query === "") {
-      item.style.display = "flex";
-      item.classList.remove("search-hidden");
-      visibleCount++;
-
-      // Highlight matching text
-      if (query !== "") {
-        highlightText(item, query);
-      } else {
-        removeHighlight(item);
-      }
-    } else {
-      item.style.display = "none";
-      item.classList.add("search-hidden");
-    }
-  });
-
-  // Show "no results" message if needed
-  toggleNoResultsMessage(visibleCount === 0 && query !== "");
-}
-
-function highlightText(item, query) {
-  const chatName = item.querySelector(".chat-name");
-  const lastMessage = item.querySelector(".last-message");
-
-  [chatName, lastMessage].forEach((element) => {
-    const text = element.textContent;
-    const highlightedText = text.replace(
-      new RegExp(`(${query})`, "gi"),
-      "<mark>$1</mark>"
-    );
-
-    if (highlightedText !== text) {
-      element.innerHTML = highlightedText;
-    }
-  });
-}
-
-function removeHighlight(item) {
-  const marks = item.querySelectorAll("mark");
-  marks.forEach((mark) => {
-    mark.outerHTML = mark.innerHTML;
-  });
-}
-
-function toggleNoResultsMessage(show) {
-  let noResultsMsg = document.querySelector(".no-results-message");
-
-  if (show && !noResultsMsg) {
-    noResultsMsg = document.createElement("div");
-    noResultsMsg.className = "no-results-message";
-    noResultsMsg.innerHTML = `
-      <div class="no-results-content">
-        <div class="no-results-icon">🔍</div>
-        <p>No chats found</p>
-        <small>Try searching with different keywords</small>
-      </div>
-    `;
-    document.querySelector(".chatlist-content").appendChild(noResultsMsg);
-  } else if (!show && noResultsMsg) {
-    noResultsMsg.remove();
   }
 }
 
-// Notification System
-function showNotification(message, type = "info") {
-  const notification = document.createElement("div");
-  notification.className = `notification notification-${type}`;
-  notification.innerHTML = `
-    <div class="notification-content">
-      <span class="notification-icon">${getNotificationIcon(type)}</span>
-      <span class="notification-message">${message}</span>
-    </div>
-    <button class="notification-close" onclick="closeNotification(this)">×</button>
-  `;
+// Load messages based on chat ID (simulated data) - This function should be removed or not used for actual loading
+// function loadChatMessages(chatId) {
+//   console.log(`Loading messages for chat ${chatId}... (using mock data)`);
+//   const messages = getMockMessages(chatId);
+//   const chatMessagesContainer = document.getElementById("chat-messages");
+//   const noMessagesDiv = document.getElementById("no-messages");
 
-  // Add to container or create one
-  let container = document.querySelector(".notification-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.className = "notification-container";
-    document.body.appendChild(container);
-  }
+//   if (!chatMessagesContainer || !noMessagesDiv) {
+//     console.error("Chat messages container or noMessagesDiv not found");
+//     return;
+//   }
 
-  container.appendChild(notification);
+//   chatMessagesContainer.innerHTML = ""; // Clear previous messages
 
-  // Auto remove after 3 seconds
-  setTimeout(() => {
-    if (notification.parentNode) {
-      closeNotification(notification.querySelector(".notification-close"));
-    }
-  }, 3000);
-}
-
-function getNotificationIcon(type) {
-  const icons = {
-    success: "✅",
-    error: "❌",
-    info: "ℹ️",
-    warning: "⚠️",
-  };
-  return icons[type] || icons.info;
-}
-
-function closeNotification(button) {
-  const notification = button.closest(".notification");
-  notification.style.transform = "translateX(100%)";
-  notification.style.opacity = "0";
-
-  setTimeout(() => {
-    notification.remove();
-  }, 300);
-}
-
-// Drag and Drop for Chat Reordering
-function setupDragAndDrop() {
-  const chatItems = document.querySelectorAll(".chat-item");
-
-  chatItems.forEach((item) => {
-    item.draggable = true;
-
-    item.addEventListener("dragstart", handleDragStart);
-    item.addEventListener("dragover", handleDragOver);
-    item.addEventListener("drop", handleDrop);
-    item.addEventListener("dragend", handleDragEnd);
-  });
-}
-
-let draggedElement = null;
-
-function handleDragStart(e) {
-  draggedElement = this;
-  this.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-
-  if (this !== draggedElement) {
-    this.classList.add("drop-target");
-  }
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-
-  if (this !== draggedElement) {
-    const chatList = document.querySelector(".chat-list");
-    const draggedIndex = Array.from(chatList.children).indexOf(draggedElement);
-    const targetIndex = Array.from(chatList.children).indexOf(this);
-
-    if (draggedIndex < targetIndex) {
-      chatList.insertBefore(draggedElement, this.nextSibling);
-    } else {
-      chatList.insertBefore(draggedElement, this);
-    }
-
-    showNotification("Chat reordered", "success");
-  }
-
-  this.classList.remove("drop-target");
-}
-
-function handleDragEnd(e) {
-  this.classList.remove("dragging");
-
-  // Remove all drop targets
-  document.querySelectorAll(".drop-target").forEach((item) => {
-    item.classList.remove("drop-target");
-  });
-
-  draggedElement = null;
-}
-
-// Enhanced Filter Management
-function setupEnhancedFilters() {
-  const filterTabs = document.querySelectorAll(".filter-tab");
-
-  filterTabs.forEach((tab) => {
-    tab.addEventListener("click", function () {
-      const filter = this.dataset.filter;
-      applyFilter(filter);
-
-      // Update active state
-      filterTabs.forEach((t) => t.classList.remove("active"));
-      this.classList.add("active");
-    });
-  });
-
-  // Add notification badges to filter tabs
-  updateFilterNotifications();
-}
-
-function applyFilter(filter) {
-  const chatItems = document.querySelectorAll(".chat-item");
-
-  chatItems.forEach((item) => {
-    const chatId = parseInt(item.dataset.chatId);
-    let shouldShow = true;
-
-    switch (filter) {
-      case "unread":
-        shouldShow = item.querySelector(".unread-count") !== null;
-        break;
-      case "groups":
-        shouldShow = item.querySelector(".group-avatar") !== null;
-        break;
-      case "muted":
-        shouldShow = mutedChats.has(chatId);
-        break;
-      case "pinned":
-        shouldShow = pinnedChats.has(chatId);
-        break;
-      case "archived":
-        shouldShow = archivedChats.has(chatId);
-        break;
-      case "all":
-      default:
-        shouldShow = !archivedChats.has(chatId);
-        break;
-    }
-
-    item.style.display = shouldShow ? "flex" : "none";
-  });
-}
-
-function updateFilterNotifications() {
-  const unreadTab = document.querySelector('[data-filter="unread"]');
-  const unreadCount = document.querySelectorAll(".unread-count").length;
-
-  if (unreadCount > 0) {
-    unreadTab.classList.add("has-notifications");
-  } else {
-    unreadTab.classList.remove("has-notifications");
-  }
-}
-
-// Context Menu
-function setupContextMenu() {
-  const chatItems = document.querySelectorAll(".chat-item");
-
-  chatItems.forEach((item) => {
-    item.addEventListener("contextmenu", function (e) {
-      e.preventDefault();
-      showContextMenu(e, this.dataset.chatId);
-    });
-  });
-
-  // Close context menu on click outside
-  document.addEventListener("click", function () {
-    const contextMenu = document.querySelector(".context-menu");
-    if (contextMenu) {
-      contextMenu.remove();
-    }
-  });
-}
-
-function showContextMenu(event, chatId) {
-  // Remove existing context menu
-  const existingMenu = document.querySelector(".context-menu");
-  if (existingMenu) {
-    existingMenu.remove();
-  }
-
-  const contextMenu = document.createElement("div");
-  contextMenu.className = "context-menu";
-
-  const isPinned = pinnedChats.has(parseInt(chatId));
-  const isMuted = mutedChats.has(parseInt(chatId));
-
-  contextMenu.innerHTML = `
-    <button class="context-menu-item" onclick="markAsRead(${chatId})">
-      <span>📖</span> Mark as Read
-    </button>
-    <button class="context-menu-item" onclick="${
-      isPinned ? "unpinChat" : "pinChat"
-    }(${chatId})">
-      <span>📌</span> ${isPinned ? "Unpin" : "Pin"} Chat
-    </button>
-    <button class="context-menu-item" onclick="${
-      isMuted ? "unmuteChat" : "muteChat"
-    }(${chatId})">
-      <span>${isMuted ? "🔊" : "🔇"}</span> ${isMuted ? "Unmute" : "Mute"} Chat
-    </button>
-    <div class="context-menu-divider"></div>
-    <button class="context-menu-item" onclick="archiveChat(${chatId})">
-      <span>📁</span> Archive
-    </button>
-    <button class="context-menu-item danger" onclick="deleteChat(${chatId})">
-      <span>🗑</span> Delete Chat
-    </button>
-  `;
-
-  // Position the menu
-  contextMenu.style.left = event.pageX + "px";
-  contextMenu.style.top = event.pageY + "px";
-
-  document.body.appendChild(contextMenu);
-
-  // Adjust position if menu goes off screen
-  const rect = contextMenu.getBoundingClientRect();
-  if (rect.right > window.innerWidth) {
-    contextMenu.style.left = event.pageX - rect.width + "px";
-  }
-  if (rect.bottom > window.innerHeight) {
-    contextMenu.style.top = event.pageY - rect.height + "px";
-  }
-}
-
-function markAsRead(chatId) {
-  const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
-  const unreadBadge = chatItem.querySelector(".unread-count");
-
-  if (unreadBadge) {
-    unreadBadge.remove();
-    showNotification("Marked as read", "success");
-    updateFilterNotifications();
-  }
-
-  // Close context menu
-  document.querySelector(".context-menu").remove();
-}
-
-// Typing Indicator Management
-function showTypingIndicator(chatId = 6) {
-  const typingChat = document.querySelector(`[data-chat-id="${chatId}"]`);
-  if (typingChat) {
-    typingChat.style.display = "flex";
-
-    // Move to top of list
-    const chatList = document.querySelector(".chat-list");
-    chatList.insertBefore(typingChat, chatList.firstChild);
-  }
-}
-
-function hideTypingIndicator(chatId = 6) {
-  const typingChat = document.querySelector(`[data-chat-id="${chatId}"]`);
-  if (typingChat) {
-    typingChat.style.display = "none";
-  }
-}
-
-// Initialize all enhanced features
-document.addEventListener("DOMContentLoaded", function () {
-  setupEnhancedSearch();
-  setupEnhancedFilters();
-  setupDragAndDrop();
-  setupContextMenu();
-
-  // Demo: Show typing indicator after 2 seconds
-  setTimeout(() => {
-    showTypingIndicator();
-    setTimeout(() => {
-      hideTypingIndicator();
-    }, 3000);
-  }, 2000);
-
-  // Close chat menus when clicking outside
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".chat-actions-menu")) {
-      document.querySelectorAll(".chat-menu").forEach((menu) => {
-        menu.style.display = "none";
-      });
-    }
-  });
-
-  // Add styles for reply messages
-  const replyStyles = `
-    <style>
-      .message-reply {
-        margin-bottom: 8px;
-        padding: 8px 12px;
-        background: rgba(0, 68, 142, 0.1);
-        border-radius: 8px;
-        border-left: 3px solid var(--accent-clr);
-        font-size: 12px;
-      }
-      
-      .reply-author {
-        font-weight: 600;
-        color: var(--accent-clr);
-        margin-bottom: 2px;
-      }
-      
-      .reply-text {
-        color: #6b7280;
-      }
-      
-      .file-attachment {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e1e5e9;
-      }
-      
-      .file-icon {
-        font-size: 24px;
-      }
-      
-      .file-info {
-        flex: 1;
-      }
-      
-      .file-name {
-        font-weight: 500;
-        color: var(--text-clr);
-        font-size: 14px;
-      }
-      
-      .file-size {
-        font-size: 12px;
-        color: #6b7280;
-      }
-      
-      .file-download {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 50%;
-        background: var(--accent-clr);
-        color: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-      }
-      
-      .file-download:hover {
-        background: var(--hover-clr);
-        transform: scale(1.05);
-      }
-    </style>
-  `;
-
-  document.head.insertAdjacentHTML("beforeend", replyStyles);
-});
+//   if (messages.length === 0) {
+//     noMessagesDiv.style.display = "block";
+//   } else {
+//     noMessagesDiv.style.display = "none";
+//     messages.forEach((msg) => {
+//       addMessage(msg.text, msg.isSelf, msg.timestamp);
+//     });
+//   }
+//   scrollToBottom();
+// }

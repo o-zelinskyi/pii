@@ -81,26 +81,6 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Modal functionality
-    const modal = document.getElementById('createChatModal');
-    const createBtn = document.getElementById('createChatBtn');
-    const closeBtn = document.querySelector('.close-button');
-    const confirmBtn = document.getElementById('confirmCreateChatBtn');
-
-    createBtn.addEventListener('click', () => {
-      modal.style.display = 'block';
-    });
-
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-      }
-    });
-
     // Search functionality
     const searchBtn = document.getElementById('searchChatsBtn');
     const searchContainer = document.getElementById('searchContainer');
