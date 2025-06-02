@@ -12,6 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
   setupStudentTable();
 
   setupModalWindows();
+
+  // Initialize WebSocket connection globally
+  if (typeof window.initializeWebSocket === "function") {
+    window.initializeWebSocket();
+  } else {
+    console.error(
+      "initializeWebSocket function not found. WebSocket will not be initialized."
+    );
+  }
 });
 
 // if ("serviceWorker" in navigator) {

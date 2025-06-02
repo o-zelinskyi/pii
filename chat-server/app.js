@@ -132,7 +132,6 @@ const chatSchema = new mongoose.Schema(
     participants: [
       {
         user_id: { type: Number, required: true },
-        role: { type: String, enum: ["admin", "member"], default: "member" },
         joinedAt: { type: Date, default: Date.now },
         leftAt: { type: Date, default: null },
       },
@@ -143,7 +142,6 @@ const chatSchema = new mongoose.Schema(
     description: { type: String, default: null },
     settings: {
       muteNotifications: { type: Boolean, default: false },
-      onlyAdminsCanMessage: { type: Boolean, default: false },
     },
   },
   { timestamps: true }
@@ -225,28 +223,28 @@ io.on("connection", (socket) => {
                 user_id: participant.user_id,
               });
               return {
-                ...participant,
+                // ...participant, // Spread participant to retain joinedAt, leftAt if needed by client
+                user_id: participant.user_id, // Ensure user_id is directly available
                 firstname: participantUser?.firstname || "Unknown",
                 lastname: participantUser?.lastname || "User",
                 photo: participantUser?.photo || "/img/avatar.webp",
                 isOnline: participantUser?.isOnline || false,
+                // Add other fields from participant if necessary, e.g., joinedAt
+                joinedAt: participant.joinedAt,
+                leftAt: participant.leftAt,
               };
             })
           );
 
           // Generate proper chat name for 1-on-1 chats
           let chatName = chat.name;
-          if (!chat.isGroup && chat.participants.length === 2) {
-            const otherParticipant = chat.participants.find(
-              (p) => p.user_id !== user_id && !p.leftAt
+          if (!chat.isGroup && participantsWithDetails.length === 2) {
+            const otherParticipant = participantsWithDetails.find(
+              (p) => p.user_id !== user_id && !p.leftAt // user_id is from the outer scope (current user)
             );
             if (otherParticipant) {
-              const otherUser = await User.findOne({
-                user_id: otherParticipant.user_id,
-              });
-              if (otherUser) {
-                chatName = `${otherUser.firstname} ${otherUser.lastname}`;
-              }
+              // No need to fetch User again, details are in otherParticipant
+              chatName = `${otherParticipant.firstname} ${otherParticipant.lastname}`;
             }
           }
 
@@ -449,23 +447,53 @@ io.on("connection", (socket) => {
       if (!user) {
         socket.emit("error", { message: "User not authenticated" });
         return;
-      } // Add creator to participants if not included
-      const allParticipants = participants.includes(user.user_id)
-        ? participants
-        : [...participants, user.user_id];
+      }
 
-      // Determine if it's a group chat - override client setting for proper logic
-      const actualIsGroup = allParticipants.length > 2;
+      const creatorIdNum = user.user_id;
 
-      // Create chat
+      const clientParticipantsNum = (
+        Array.isArray(participants) ? participants : []
+      )
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !isNaN(id) && id !== null);
+
+      let finalParticipantIds = [...clientParticipantsNum];
+      if (!clientParticipantsNum.includes(creatorIdNum)) {
+        finalParticipantIds.push(creatorIdNum);
+      }
+
+      const uniqueParticipantUserIds = [...new Set(finalParticipantIds)];
+      const actualIsGroup = uniqueParticipantUserIds.length > 2;
+
+      // Determine chat name: if not a group and has 2 participants, generate name from the other user
+      let determinedChatName = name; // Use provided name by default or for groups
+      if (!actualIsGroup && uniqueParticipantUserIds.length === 2) {
+        const otherUserId = uniqueParticipantUserIds.find(
+          (id) => id !== creatorIdNum
+        );
+        if (otherUserId) {
+          const otherUser = await User.findOne({ user_id: otherUserId });
+          if (otherUser) {
+            determinedChatName = `${otherUser.firstname} ${otherUser.lastname}`;
+          } else {
+            // Fallback if other user not found, though this should ideally not happen
+            determinedChatName = `Chat with User ${otherUserId}`;
+          }
+        } else {
+          // Fallback for 1-on-1 if other user ID isn't found (should not happen with correct logic)
+          determinedChatName = `Private Chat ${Date.now()}`;
+        }
+      } else if (actualIsGroup && !name) {
+        // Fallback for group chat if no name provided
+        determinedChatName = `Group Chat ${Date.now()}`;
+      }
+
       const chat = new Chat({
-        name: actualIsGroup
-          ? name || `Group Chat ${Date.now()}`
-          : `Chat ${Date.now()}`,
+        name: determinedChatName,
         isGroup: actualIsGroup,
-        participants: allParticipants.map((userId) => ({
-          user_id: userId,
-          role: userId === user.user_id ? "admin" : "member",
+        participants: uniqueParticipantUserIds.map((userId) => ({
+          // Ensures no roles are assigned
+          user_id: userId, // userId is already a unique number
         })),
       });
       await chat.save();
@@ -477,27 +505,36 @@ io.on("connection", (socket) => {
             user_id: participant.user_id,
           });
           return {
-            ...participant,
+            user_id: participant.user_id,
             firstname: participantUser?.firstname || "Unknown",
             lastname: participantUser?.lastname || "User",
             photo: participantUser?.photo || "/img/avatar.webp",
             isOnline: participantUser?.isOnline || false,
+            joinedAt: participant.joinedAt,
+            leftAt: participant.leftAt,
           };
         })
-      ); // Generate proper chat name for 1-on-1 chats
-      let chatName = chat.name;
-      if (!actualIsGroup && allParticipants.length === 2) {
-        const otherParticipant = allParticipants.find(
-          (userId) => userId !== user.user_id
+      );
+
+      // Generate proper chat name for 1-on-1 chats
+      let chatName = chat.name; // Use the name from the chat document first
+      if (!actualIsGroup && uniqueParticipantUserIds.length === 2) {
+        const otherParticipantId = uniqueParticipantUserIds.find(
+          (userId) => userId !== creatorIdNum
         );
-        if (otherParticipant) {
-          const otherUser = await User.findOne({
-            user_id: otherParticipant,
-          });
-          if (otherUser) {
-            chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+        if (otherParticipantId) {
+          // Find the details from participantsWithDetails to avoid another DB call
+          const otherUserDetails = participantsWithDetails.find(
+            (p) => p.user_id === otherParticipantId
+          );
+          if (otherUserDetails) {
+            chatName = `${otherUserDetails.firstname} ${otherUserDetails.lastname}`;
           }
+          // If otherUserDetails is not found (should not happen), chatName remains as from DB
         }
+      } else if (actualIsGroup && !chat.name) {
+        // Ensure group chats have a name
+        chatName = `Group Chat`; // Default if somehow name was empty
       }
 
       const chatResponse = {
@@ -508,7 +545,9 @@ io.on("connection", (socket) => {
 
       // Join all participants to the chat room
       const participantSockets = Array.from(activeUsers.entries())
-        .filter(([, userData]) => allParticipants.includes(userData.user_id))
+        .filter(([, userData]) =>
+          uniqueParticipantUserIds.includes(userData.user_id)
+        ) // Corrected: uniqueParticipantUserIds
         .map(([socketId]) => socketId);
 
       participantSockets.forEach((socketId) => {
@@ -557,14 +596,13 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // Find the chat and verify user is an admin participant
+      // Find the chat and verify user is a participant (removed admin check)
       const chat = await Chat.findOne({
         _id: chatId,
-        isGroup: true, // Only group chats can have their names edited
+        isGroup: true, // Only group chats can have their names edited by default (can be adjusted)
         participants: {
           $elemMatch: {
             user_id: user.user_id,
-            role: "admin", // User must be an admin
             leftAt: null, // User must still be in the chat
           },
         },
@@ -585,14 +623,9 @@ io.on("connection", (socket) => {
             socket.emit("error", {
               message: "You are not a participant in this chat.",
             });
-          } else if (userParticipant.role !== "admin") {
-            socket.emit("error", {
-              message: "Only chat admins can rename group chats.",
-            });
           } else {
             socket.emit("error", {
-              message:
-                "Chat not found, not a group chat, or user is not an admin.",
+              message: "Chat not found or not a group chat.", // Simplified error after removing admin check
             });
           }
         }
@@ -632,7 +665,6 @@ io.on("connection", (socket) => {
         participants: {
           $elemMatch: {
             user_id: user.user_id,
-            role: "admin",
             leftAt: null,
           },
         },
@@ -643,12 +675,21 @@ io.on("connection", (socket) => {
         return;
       }
 
+      // Check if user is a participant of the chat (removed admin check)
+      if (!chat) {
+        socket.emit("error", {
+          message:
+            "You are not a participant in this chat or chat does not exist.",
+        }); // Simplified error
+        return;
+      }
+
       // Add user to chat
       await Chat.findByIdAndUpdate(chatId, {
         $push: {
           participants: {
+            // Ensures no role is assigned when adding a user
             user_id: userId,
-            role: "member",
             joinedAt: new Date(),
           },
         },
@@ -685,9 +726,11 @@ io.on("connection", (socket) => {
         return;
       }
 
+      const currentUserSystemId = user.user_id; // Renamed for clarity
+
       // Get user's chats with last message details
       const chats = await Chat.find({
-        "participants.user_id": user.user_id,
+        "participants.user_id": currentUserSystemId,
         "participants.leftAt": null,
       })
         .populate({
@@ -717,30 +760,34 @@ io.on("connection", (socket) => {
                 user_id: participant.user_id,
               });
               return {
-                ...participant,
+                // ...participant, // Spread participant to retain joinedAt, leftAt
+                user_id: participant.user_id,
                 firstname: participantUser?.firstname || "Unknown",
                 lastname: participantUser?.lastname || "User",
                 photo: participantUser?.photo || "/img/avatar.webp",
                 isOnline: participantUser?.isOnline || false,
+                joinedAt: participant.joinedAt, // Explicitly include
+                leftAt: participant.leftAt, // Explicitly include
               };
             })
           );
 
-          // Generate chat name if not set
-          let chatName = chat.name;
-          if (!chat.isGroup && otherParticipants.length > 0) {
-            // For 1-on-1 chats, try to get the other user's name
-            const otherUser = await User.findOne({
-              user_id: otherParticipants[0].user_id,
-            });
-            if (otherUser) {
-              chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+          // Generate chat name
+          let finalChatName = chat.name;
+          if (!chat.isGroup && participantsWithDetails.length === 2) {
+            const otherParticipant = participantsWithDetails.find(
+              (p) => p.user_id !== currentUserSystemId && !p.leftAt
+            );
+            if (otherParticipant) {
+              finalChatName = `${otherParticipant.firstname} ${otherParticipant.lastname}`;
             }
+          } else if (chat.isGroup && !chat.name) {
+            finalChatName = "Group Chat"; // Fallback for group chats without a name
           }
 
           return {
             ...chat,
-            name: chatName,
+            name: finalChatName,
             unreadCount,
             participants: participantsWithDetails,
             participantCount: otherParticipants.length,
@@ -871,50 +918,70 @@ app.get("/health", (req, res) => {
 // Create chat endpoint
 app.post("/api/create-chat", async (req, res) => {
   try {
-    const { participants, chatType, createdBy } = req.body;
+    const { participants, chatType, createdBy, name: clientName } = req.body; // Added clientName
 
     if (
       !participants ||
       !Array.isArray(participants) ||
       participants.length === 0
     ) {
-      return res.status(400).json({
-        success: false,
-        message: "Participants array is required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Participants are required" });
     }
 
     if (!createdBy) {
-      return res.status(400).json({
-        success: false,
-        message: "Creator ID is required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Creator ID is required" });
+    }
+    const creatorIdNum = parseInt(createdBy, 10);
+    if (isNaN(creatorIdNum)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid Creator ID" });
     }
 
-    // Add creator to participants if not included
-    const allParticipants = participants.includes(createdBy)
-      ? participants
-      : [...participants, createdBy];
+    const participantIdsNum = participants
+      .map((id) => parseInt(id, 10))
+      .filter((id) => !isNaN(id));
+
+    // Add creator to participants if not included and ensure uniqueness
+    const allParticipantIds = [
+      ...new Set([...participantIdsNum, creatorIdNum]),
+    ];
 
     // Determine if it's a group chat
-    const isGroup = chatType === "group" || allParticipants.length > 2;
+    const isGroup = chatType === "group" || allParticipantIds.length > 2;
 
     // Generate chat name
     let chatName;
     if (isGroup) {
-      chatName = `Group Chat ${Date.now()}`;
+      chatName = clientName || `Group Chat ${Date.now()}`;
+    } else if (allParticipantIds.length === 2) {
+      const otherUserId = allParticipantIds.find((id) => id !== creatorIdNum);
+      if (otherUserId) {
+        const otherUser = await User.findOne({ user_id: otherUserId });
+        if (otherUser) {
+          chatName = `${otherUser.firstname} ${otherUser.lastname}`;
+        } else {
+          chatName = `Private Chat ${Date.now()}`; // Fallback
+        }
+      } else {
+        chatName = `Private Chat ${Date.now()}`; // Fallback
+      }
     } else {
-      // For 1-on-1 chats, we'll set the name based on participants later
-      chatName = `Chat ${Date.now()}`;
+      // Fallback for chats that are not group and not 2 participants (e.g. self-chat if allowed)
+      chatName = clientName || `Chat ${Date.now()}`;
     }
 
     // Create chat
     const chat = new Chat({
       name: chatName,
       isGroup,
-      participants: allParticipants.map((userId) => ({
-        user_id: parseInt(userId),
-        role: parseInt(userId) === parseInt(createdBy) ? "admin" : "member",
+      participants: allParticipantIds.map((userId) => ({
+        // Use allParticipantIds
+        user_id: userId, // userId is already a number
       })),
     });
 
@@ -939,15 +1006,61 @@ app.post("/api/create-chat", async (req, res) => {
 app.get("/api/chats/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    const currentUserIdNum = parseInt(userId, 10);
+    if (isNaN(currentUserIdNum)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid User ID" });
+    }
 
-    const chats = await Chat.find({
-      "participants.user_id": parseInt(userId),
+    const rawChats = await Chat.find({
+      "participants.user_id": currentUserIdNum,
       "participants.leftAt": null,
     })
       .populate("lastMessage")
-      .sort({ lastActivity: -1 });
+      .sort({ lastActivity: -1 })
+      .lean(); // Use lean for better performance if only reading data
 
-    res.json({ success: true, chats });
+    const chatsWithCorrectNames = await Promise.all(
+      rawChats.map(async (chat) => {
+        let finalName = chat.name;
+        if (!chat.isGroup && chat.participants.length === 2) {
+          const otherParticipantEntry = chat.participants.find(
+            (p) => p.user_id !== currentUserIdNum && !p.leftAt
+          );
+          if (otherParticipantEntry) {
+            const otherUser = await User.findOne({
+              user_id: otherParticipantEntry.user_id,
+            }).lean();
+            if (otherUser) {
+              finalName = `${otherUser.firstname} ${otherUser.lastname}`;
+            }
+          }
+        }
+        // Populate full participant details for client
+        const participantsWithDetails = await Promise.all(
+          chat.participants.map(async (p) => {
+            const userDoc = await User.findOne({ user_id: p.user_id }).lean();
+            return {
+              user_id: p.user_id,
+              firstname: userDoc?.firstname || "Unknown",
+              lastname: userDoc?.lastname || "User",
+              photo: userDoc?.photo || "/img/avatar.webp",
+              isOnline: userDoc?.isOnline || false,
+              joinedAt: p.joinedAt,
+              leftAt: p.leftAt,
+            };
+          })
+        );
+        return {
+          ...chat,
+          name: finalName,
+          participants: participantsWithDetails,
+        };
+      })
+    );
+
+    res.json({ success: true, chats: chatsWithCorrectNames });
   } catch (error) {
     console.error("Error fetching chats:", error);
     res.status(500).json({ success: false, message: "Failed to fetch chats" });
