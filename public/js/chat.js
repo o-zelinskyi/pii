@@ -233,22 +233,13 @@ function updateChatHeader(chatItem) {
   const listItemChatName = listItemChatNameRaw
     ? listItemChatNameRaw.trim()
     : "";
-
   // chatNameToDisplay will be the dbChatName (trimmed) or listItemChatName (trimmed),
   // falling back to "Chat" if both are empty after trimming.
   const chatNameToDisplay = dbChatName || listItemChatName || "Chat";
 
-  const avatarSrcFromListItem = chatItem.querySelector(".chat-avatar img")?.src;
-  const hasOnlineIndicator = chatItem.querySelector(".online-indicator");
-
-  const headerAvatar = document.querySelector(".chat-header .chat-avatar img");
   const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
   const headerStatus = document.querySelector(".chat-details .status");
   const editChatNameBtn = document.getElementById("edit-chat-name-btn");
-
-  if (headerAvatar && avatarSrcFromListItem) {
-    headerAvatar.src = avatarSrcFromListItem;
-  }
 
   if (headerNameH3) {
     headerNameH3.textContent = chatNameToDisplay; // Already incorporates trimming and "Chat" fallback
@@ -271,12 +262,9 @@ function updateChatHeader(chatItem) {
       editChatNameBtn.style.display = "none";
     }
   }
-
   if (headerStatus) {
     // TODO: Implement actual online status fetching for individual chats
-    headerStatus.textContent = hasOnlineIndicator
-      ? "Online • Last seen recently"
-      : "Last seen recently";
+    headerStatus.textContent = "Last seen recently";
   }
 }
 
@@ -491,16 +479,7 @@ function setupChatInput() {
         minute: "2-digit",
       });
 
-    const avatarHtml = !isSelf
-      ? `
-            <div class="message-avatar">
-                <img src="${getAvatarUrl(sender)}" alt="Avatar">
-            </div>
-        `
-      : "";
-
     messageDiv.innerHTML = `
-            ${avatarHtml}
             <div class="message-content">
                 <div class="message-bubble">
                     <p>${escapeHtml(text)}</p>
@@ -528,21 +507,8 @@ function setupChatInput() {
 
   // Expose addMessage function to window for WebSocket integration
   window.addMessage = addMessage;
-
   function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-  function getAvatarUrl(sender = null) {
-    // If sender information is provided, use it for avatar
-    if (sender && sender.avatar) {
-      return sender.avatar;
-    }
-
-    // In a real app, this would come from the selected chat
-    return (
-      document.querySelector(".chat-header .chat-avatar img")?.src ||
-      "/img/avatar.webp"
-    );
   }
 
   function escapeHtml(text) {
@@ -874,18 +840,9 @@ function setupModals() {
         console.warn("Skipping user with missing id or firstname:", user);
         return;
       }
-
       const userItem = document.createElement("div");
       userItem.classList.add("user-item");
       userItem.dataset.userId = user.id;
-
-      const avatarImg = document.createElement("img");
-      avatarImg.src = user.avatar || `${window.urlRoot}/img/avatar.webp`;
-      avatarImg.alt = user.firstname;
-      avatarImg.classList.add("avatar");
-      avatarImg.onerror = function () {
-        this.src = `${window.urlRoot}/img/avatar.webp`;
-      };
 
       const userName = document.createElement("h4");
       userName.textContent = `${user.firstname} ${user.lastname || ""}`;
@@ -899,7 +856,6 @@ function setupModals() {
       const label = document.createElement("label");
       label.htmlFor = checkbox.id;
       label.classList.add("user-item-label");
-      label.appendChild(avatarImg);
       label.appendChild(userName);
 
       userItem.appendChild(checkbox);

@@ -32,13 +32,9 @@ require APPROOT . '/views/inc/head_end.php';
 require APPROOT . '/views/inc/header.php';
 require APPROOT . '/views/inc/chatlist.php'; ?>
 
-<div class="chat-main">
-  <!-- Chat Header -->
+<div class="chat-main"> <!-- Chat Header -->
   <div class="chat-header" id="chat-header">
     <div class="chat-info">
-      <div class="chat-avatar">
-        <div class="online-indicator" id="online-indicator"></div>
-      </div>
       <div class="chat-details">
         <h3 style="margin: 0;" id="chat-name">Select a chat</h3> <!-- ADDED for chat name -->
         <button id="edit-chat-name-btn" class="edit-chat-name-btn" style="display:none; margin-left: 10px; background: none; border: none; cursor: pointer;" title="Edit chat name">

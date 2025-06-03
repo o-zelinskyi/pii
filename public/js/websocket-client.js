@@ -339,38 +339,14 @@ class ChatWebSocket {
     chatElement.dataset.isGroup = chat.is_group_chat || chat.isGroup; // Store if it's a group chat    // Server already handles proper chat name generation for 1-on-1 chats
     // Trust the server's chat name which includes user names for 1-on-1 chats
     let chatNameToDisplay = chat.name || "Unnamed Chat";
-    let avatarUrl = `${window.urlRoot || ""}/img/avatar.webp`; // Default avatar
     let lastMessageText = chat.lastMessage?.content || "No messages yet";
     let lastMessageTime = chat.lastMessage?.timestamp
       ? this.formatTime(chat.lastMessage.timestamp)
       : "";
-    let isOnline = false; // Placeholder
-
-    const isGroup = chat.is_group_chat || chat.isGroup;
-
-    // For 1-on-1 chats, get the other participant's avatar and online status
-    if (!isGroup && chat.participants && chat.participants.length === 2) {
-      const otherParticipant = chat.participants.find(
-        (p) => p.user_id !== (window.currentUser && window.currentUser.user_id)
-      );
-      if (otherParticipant) {
-        avatarUrl = otherParticipant.photo || avatarUrl;
-        isOnline = otherParticipant.isOnline || false;
-      }
-    } else if (isGroup) {
-      // Group chat: use group avatar if available
-      avatarUrl = chat.avatar || `${window.urlRoot || ""}/img/group-avatar.png`;
-    }
 
     chatElement.dataset.dbName = chatNameToDisplay; // Set dbName to the determined display name
 
     chatElement.innerHTML = `
-      <div class="chat-avatar">
-        <img src="${this.escapeHtml(avatarUrl)}" alt="${this.escapeHtml(
-      chatNameToDisplay
-    )}">
-        ${isOnline ? '<div class="online-indicator"></div>' : ""}
-      </div>
       <div class="chat-details">
         <h3 class="chat-name">${this.escapeHtml(chatNameToDisplay)}</h3>
         <p class="last-message">${this.escapeHtml(lastMessageText)}</p>

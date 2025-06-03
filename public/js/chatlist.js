@@ -170,16 +170,10 @@ class ChatList {
       `;
       return;
     }
-
     container.innerHTML = users
       .map(
         (user) => `
       <div class="user-item" data-user-id="${user.id}">
-        <div class="user-avatar">
-          <span class="status-indicator ${
-            user.isOnline ? "online" : "offline"
-          }"></span>
-        </div>
         <div class="user-info">
           <h4>${user.firstname} ${user.lastname}</h4>
           <span class="user-status">${user.status}</span>
@@ -188,6 +182,9 @@ class ChatList {
               ? `<span class="user-group">${user.studygroup}</span>`
               : ""
           }
+          <span class="status-indicator ${
+            user.isOnline ? "online" : "offline"
+          }"></span>
         </div>
         <input type="checkbox" name="user" value="${user.id}" 
                onchange="window.chatList.toggleUserSelection(${
