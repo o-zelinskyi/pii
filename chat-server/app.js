@@ -65,7 +65,6 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true }, // Made email unique as it usually is
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
-    isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: Date.now },
     socketId: { type: String, default: null },
   },
@@ -154,33 +153,33 @@ const Message = mongoose.model("Message", messageSchema);
 const Chat = mongoose.model("Chat", chatSchema); // Create Chat model
 const UserStatus = mongoose.model("UserStatus", userStatusSchema);
 
-// Store active socket connections
+// Store active socket connections and online users
 const activeUsers = new Map();
+const onlineUsers = new Set(); // Simple array to track online user IDs
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-
   // User authentication and join
   socket.on("join", async (userData) => {
     try {
       const { user_id, email, firstname, lastname } = userData;
 
-      // Update or create user in MongoDB
-      let user = await User.findOneAndUpdate(
+      // Update user's last seen in MongoDB
+      await User.findOneAndUpdate(
         { user_id: user_id },
         {
           user_id,
           email,
           firstname,
           lastname,
-          isOnline: true,
           lastSeen: new Date(),
           socketId: socket.id,
         },
         { upsert: true, new: true }
       );
 
+      // Add to active users and online array
       activeUsers.set(socket.id, {
         user_id,
         email,
@@ -188,6 +187,8 @@ io.on("connection", (socket) => {
         lastname,
         socketId: socket.id,
       });
+
+      onlineUsers.add(user_id);
 
       // Join user to their chat rooms
       const userChats = await Chat.find({
@@ -205,6 +206,8 @@ io.on("connection", (socket) => {
           user_id,
           firstname,
           lastname,
+          isOnline: true,
+          lastSeen: new Date(),
         });
       }); // Send user's chats list with participant details
       const chatsRaw = await Chat.find({
@@ -213,24 +216,41 @@ io.on("connection", (socket) => {
       })
         .populate("lastMessage")
         .sort({ lastActivity: -1 })
-        .lean();
-
-      // Process chats to include participant details and proper names
+        .lean(); // Process chats to include participant details and proper names
       const chatsWithDetails = await Promise.all(
         chatsRaw.map(async (chat) => {
-          // Populate participant details with user information
+          // Populate participant details with user information including real-time status
           const participantsWithDetails = await Promise.all(
             chat.participants.map(async (participant) => {
-              const participantUser = await User.findOne({
-                user_id: participant.user_id,
-              });
-              return {
+              const isOnline = onlineUsers.has(participant.user_id);
+              let participantData = {
                 ...participant,
-                firstname: participantUser?.firstname || "Unknown",
-                lastname: participantUser?.lastname || "User",
-                photo: participantUser?.photo || "/img/avatar.webp",
-                isOnline: participantUser?.isOnline || false,
+                isOnline: isOnline,
               };
+
+              if (isOnline) {
+                // Get basic info from activeUsers or use cached data
+                const activeUserData = Array.from(activeUsers.values()).find(
+                  (u) => u.user_id === participant.user_id
+                );
+                participantData.firstname =
+                  activeUserData?.firstname || "Unknown";
+                participantData.lastname = activeUserData?.lastname || "User";
+                participantData.lastSeen = new Date(); // Online now
+              } else {
+                // Get full info from MongoDB for offline users
+                const participantUser = await User.findOne({
+                  user_id: participant.user_id,
+                });
+                participantData.firstname =
+                  participantUser?.firstname || "Unknown";
+                participantData.lastname = participantUser?.lastname || "User";
+                participantData.lastSeen =
+                  participantUser?.lastSeen || new Date();
+              }
+
+              participantData.photo = "/img/avatar.webp";
+              return participantData;
             })
           );
 
@@ -468,21 +488,33 @@ io.on("connection", (socket) => {
           role: userId === user.user_id ? "admin" : "member",
         })),
       });
-      await chat.save();
-
-      // Populate participant details for the response
+      await chat.save(); // Populate participant details for the response
       const participantsWithDetails = await Promise.all(
         chat.participants.map(async (participant) => {
-          const participantUser = await User.findOne({
-            user_id: participant.user_id,
-          });
-          return {
+          const isOnline = onlineUsers.has(participant.user_id);
+          let participantData = {
             ...participant,
-            firstname: participantUser?.firstname || "Unknown",
-            lastname: participantUser?.lastname || "User",
-            photo: participantUser?.photo || "/img/avatar.webp",
-            isOnline: participantUser?.isOnline || false,
+            isOnline: isOnline,
           };
+
+          if (isOnline) {
+            // Get basic info from activeUsers
+            const activeUserData = Array.from(activeUsers.values()).find(
+              (u) => u.user_id === participant.user_id
+            );
+            participantData.firstname = activeUserData?.firstname || "Unknown";
+            participantData.lastname = activeUserData?.lastname || "User";
+          } else {
+            // Get full info from MongoDB for offline users
+            const participantUser = await User.findOne({
+              user_id: participant.user_id,
+            });
+            participantData.firstname = participantUser?.firstname || "Unknown";
+            participantData.lastname = participantUser?.lastname || "User";
+          }
+
+          participantData.photo = "/img/avatar.webp";
+          return participantData;
         })
       ); // Generate proper chat name for 1-on-1 chats
       let chatName = chat.name;
@@ -703,26 +735,43 @@ io.on("connection", (socket) => {
             chat_id: chat._id,
             sender_id: { $ne: user.user_id },
             "readBy.user_id": { $ne: user.user_id },
-          });
-
-          // Get other participants (for 1-on-1 chats)
+          }); // Get other participants (for 1-on-1 chats)
           const otherParticipants = chat.participants.filter(
             (p) => p.user_id !== user.user_id && !p.leftAt
           );
 
-          // Populate participant details with user information
+          // Populate participant details with user information including real-time status
           const participantsWithDetails = await Promise.all(
             chat.participants.map(async (participant) => {
-              const participantUser = await User.findOne({
-                user_id: participant.user_id,
-              });
-              return {
+              const isOnline = onlineUsers.has(participant.user_id);
+              let participantData = {
                 ...participant,
-                firstname: participantUser?.firstname || "Unknown",
-                lastname: participantUser?.lastname || "User",
-                photo: participantUser?.photo || "/img/avatar.webp",
-                isOnline: participantUser?.isOnline || false,
+                isOnline: isOnline,
               };
+
+              if (isOnline) {
+                // Get basic info from activeUsers or use cached data
+                const activeUserData = Array.from(activeUsers.values()).find(
+                  (u) => u.user_id === participant.user_id
+                );
+                participantData.firstname =
+                  activeUserData?.firstname || "Unknown";
+                participantData.lastname = activeUserData?.lastname || "User";
+                participantData.lastSeen = new Date(); // Online now
+              } else {
+                // Get full info from MongoDB for offline users
+                const participantUser = await User.findOne({
+                  user_id: participant.user_id,
+                });
+                participantData.firstname =
+                  participantUser?.firstname || "Unknown";
+                participantData.lastname = participantUser?.lastname || "User";
+                participantData.lastSeen =
+                  participantUser?.lastSeen || new Date();
+              }
+
+              participantData.photo = "/img/avatar.webp";
+              return participantData;
             })
           );
 
@@ -816,23 +865,23 @@ io.on("connection", (socket) => {
       console.error("Error handling reaction:", error);
       socket.emit("error", { message: "Failed to update reaction" });
     }
-  });
-
-  // User disconnection
+  }); // User disconnection
   socket.on("disconnect", async () => {
     try {
       const user = activeUsers.get(socket.id);
 
       if (user) {
-        // Update user status to offline
+        // Update user's last seen in MongoDB and remove from online array
         await User.findOneAndUpdate(
           { user_id: user.user_id },
           {
-            isOnline: false,
             lastSeen: new Date(),
             socketId: null,
           }
         );
+
+        // Remove from online users array
+        onlineUsers.delete(user.user_id);
 
         // Notify user is offline to all their chats
         const userChats = await Chat.find({
@@ -845,6 +894,8 @@ io.on("connection", (socket) => {
             user_id: user.user_id,
             firstname: user.firstname,
             lastname: user.lastname,
+            lastSeen: new Date(),
+            isOnline: false,
           });
         });
 
@@ -862,6 +913,16 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     message: "Chat server is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Get online users list (for debugging/monitoring)
+app.get("/api/online-users", (req, res) => {
+  res.json({
+    success: true,
+    onlineUsers: Array.from(onlineUsers),
+    onlineCount: onlineUsers.size,
     timestamp: new Date().toISOString(),
   });
 });
@@ -1042,25 +1103,32 @@ app.get("/api/user-status/:userId", async (req, res) => {
         .json({ success: false, message: "Invalid user ID" });
     }
 
-    const user = await User.findOne({ user_id: userId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+    const isOnline = onlineUsers.has(userId);
+    let userData = {
+      user_id: userId,
+      isOnline: isOnline,
+    };
+
+    if (isOnline) {
+      // User is online, last seen is now
+      userData.lastSeen = new Date();
+    } else {
+      // Get last seen from MongoDB
+      const user = await User.findOne({ user_id: userId });
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+      userData.lastSeen = user.lastSeen;
     }
 
-    // Potentially merge with UserStatus model if more detailed status is needed
     res.json({
       success: true,
-      data: {
-        user_id: user.user_id,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-        // Add other status fields if UserStatus model is merged or queried here
-      },
+      data: userData,
     });
   } catch (error) {
-    console.error("Error fetching user status from MongoDB:", error);
+    console.error("Error fetching user status:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

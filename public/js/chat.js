@@ -263,8 +263,64 @@ function updateChatHeader(chatItem) {
     }
   }
   if (headerStatus) {
-    // TODO: Implement actual online status fetching for individual chats
-    headerStatus.textContent = "Last seen recently";
+    // For 1-on-1 chats, try to get real status from chat participants data
+    if (!isGroupChat && chatItem.dataset.participants) {
+      try {
+        const participants = JSON.parse(chatItem.dataset.participants);
+        const otherParticipant = participants.find(
+          (p) => p.user_id !== window.currentUser?.user_id
+        );
+
+        if (otherParticipant) {
+          if (otherParticipant.isOnline) {
+            headerStatus.textContent = "Online";
+            headerStatus.style.color = "#28a745"; // Green color for online
+          } else if (otherParticipant.lastSeen) {
+            const lastSeenTime = formatLastSeenTime(otherParticipant.lastSeen);
+            headerStatus.textContent = `Last seen ${lastSeenTime}`;
+            headerStatus.style.color = "#6c757d"; // Gray color for offline
+          } else {
+            headerStatus.textContent = "Last seen recently";
+            headerStatus.style.color = "#6c757d";
+          }
+        } else {
+          headerStatus.textContent = "Last seen recently";
+          headerStatus.style.color = "#6c757d";
+        }
+      } catch (e) {
+        // Fallback if participant data parsing fails
+        headerStatus.textContent = "Last seen recently";
+        headerStatus.style.color = "#6c757d";
+      }
+    } else {
+      // For group chats, show participant count or generic message
+      headerStatus.textContent = isGroupChat ? "Group chat" : "Chat";
+      headerStatus.style.color = "#6c757d";
+    }
+  }
+
+  // Helper function to format last seen time
+  function formatLastSeenTime(lastSeenDate) {
+    if (!lastSeenDate) return "recently";
+
+    const now = new Date();
+    const lastSeen = new Date(lastSeenDate);
+    const diffMs = now - lastSeen;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return "just now";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return lastSeen.toLocaleDateString();
+    }
   }
 }
 

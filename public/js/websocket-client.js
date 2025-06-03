@@ -33,15 +33,13 @@ class ChatWebSocket {
     // New message received
     this.socket.on("newMessage", (data) => {
       this.handleNewMessage(data);
-    });
-
-    // User online/offline status
+    }); // User online/offline status with enhanced details
     this.socket.on("userOnline", (user) => {
-      this.updateUserStatus(user.user_id, true);
+      this.updateUserStatus(user.user_id, true, user);
     });
 
     this.socket.on("userOffline", (user) => {
-      this.updateUserStatus(user.user_id, false);
+      this.updateUserStatus(user.user_id, false, user);
     });
 
     // Typing indicators
@@ -253,8 +251,7 @@ class ChatWebSocket {
       );
     }
   }
-
-  updateUserStatus(userId, isOnline) {
+  updateUserStatus(userId, isOnline, userDetails = null) {
     // Update user status in the UI
     const userElements = document.querySelectorAll(
       `[data-user-id="${userId}"]`
@@ -268,6 +265,11 @@ class ChatWebSocket {
         element.classList.remove("online");
       }
     });
+
+    // Update chat header status if this is the current chat participant
+    if (userDetails && this.currentChatId) {
+      this.updateChatHeaderStatus(userId, isOnline, userDetails);
+    }
   }
   displayMessages(messages, chatId) {
     if (this.currentChatId !== chatId) return;
@@ -520,6 +522,58 @@ class ChatWebSocket {
           if (editChatNameBtn) editChatNameBtn.style.display = "inline-block";
         }
       }
+    }
+  }
+
+  updateChatHeaderStatus(userId, isOnline, userDetails) {
+    // Only update if we're in a 1-on-1 chat with this user
+    const headerStatus = document.querySelector(".chat-details .status");
+    if (!headerStatus) return;
+
+    // Get the current active chat item to check if it's a 1-on-1 chat with this user
+    const activeChatItem = document.querySelector(".chat-item.active");
+    if (!activeChatItem) return;
+
+    const isGroupChat = activeChatItem.dataset.isGroup === "true";
+    if (isGroupChat) return; // Don't update status for group chats
+
+    // Check if this user is the other participant in the current 1-on-1 chat
+    // This requires checking the chat participants, but for now we'll check if the chat name matches
+    const chatName = activeChatItem.querySelector(".chat-name")?.textContent;
+    const userFullName = `${userDetails.firstname} ${userDetails.lastname}`;
+
+    if (chatName && chatName.includes(userDetails.firstname)) {
+      if (isOnline) {
+        headerStatus.textContent = "Online";
+        headerStatus.style.color = "#28a745"; // Green color for online
+      } else {
+        const lastSeenTime = this.formatLastSeenTime(userDetails.lastSeen);
+        headerStatus.textContent = `Last seen ${lastSeenTime}`;
+        headerStatus.style.color = "#6c757d"; // Gray color for offline
+      }
+    }
+  }
+
+  formatLastSeenTime(lastSeenDate) {
+    if (!lastSeenDate) return "recently";
+
+    const now = new Date();
+    const lastSeen = new Date(lastSeenDate);
+    const diffMs = now - lastSeen;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) {
+      return "just now";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return lastSeen.toLocaleDateString();
     }
   }
 
