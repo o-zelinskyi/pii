@@ -1,240 +1,180 @@
 // Chat Application JavaScript
-window.chatApp = window.chatApp || {}; // Ensure namespace exists globally at the top
-
 document.addEventListener("DOMContentLoaded", function () {
+  window.chatApp = window.chatApp || {}; // Ensure namespace exists
   initializeChatApp();
 });
 
-// Add a stub for initializeChatApp to prevent ReferenceError
 function initializeChatApp() {
-  // Initialization logic can be added here if needed
-  console.log("initializeChatApp called (stub).");
-}
-
-// Define the cleanupEditUI function first
-window.chatApp.cleanupEditUI = function (
-  showEditButton = true,
-  nameToSetAndUpdate = null
-) {
-  const chatDetailsContainer = document.querySelector(".chat-details");
-  if (!chatDetailsContainer) {
-    console.error("cleanupEditUI: .chat-details container not found");
-    return;
-  }
-  const headerNameH3 =
-    chatDetailsContainer.querySelector("h3#chat-name") ||
-    chatDetailsContainer.querySelector("h3") ||
-    document.querySelector("#chat-name");
-  const editChatNameBtn = document.getElementById("edit-chat-name-btn");
-
-  console.log(
-    "cleanupEditUI: chatDetailsContainer found:",
-    chatDetailsContainer
-  );
-  console.log("cleanupEditUI: headerNameH3:", headerNameH3);
-  console.log("cleanupEditUI: editChatNameBtn:", editChatNameBtn);
-
-  // Directly query from document to find elements within .chat-details
-  const inputField = document.querySelector(
-    ".chat-details input.edit-chat-name-input"
-  );
-  const saveBtn = document.querySelector(
-    ".chat-details button.save-chat-name-btn"
-  );
-  const cancelBtn = document.querySelector(
-    ".chat-details button.cancel-chat-name-btn"
-  );
-
-  console.log(
-    "cleanupEditUI: Elements to remove - input:",
-    inputField,
-    "save:",
-    saveBtn,
-    "cancel:",
-    cancelBtn
-  );
-
-  if (inputField) inputField.remove();
-  if (saveBtn) saveBtn.remove();
-  if (cancelBtn) cancelBtn.remove();
-
-  if (headerNameH3) {
-    if (nameToSetAndUpdate) {
-      let trimmedName = "";
-      if (typeof nameToSetAndUpdate === "string") {
-        trimmedName = nameToSetAndUpdate.trim();
-      } else {
-        trimmedName = String(nameToSetAndUpdate).trim();
-      }
-
-      if (trimmedName) {
-        headerNameH3.textContent = trimmedName;
-        console.log(
-          `cleanupEditUI: Set headerNameH3.textContent to "${trimmedName}"`
-        );
-        if (editChatNameBtn) {
-          editChatNameBtn.dataset.currentName = trimmedName;
-        }
-      } else {
-        console.warn(
-          `cleanupEditUI: Provided name "${nameToSetAndUpdate}" trims to empty. Retaining previous name: "${headerNameH3.textContent}"`
-        );
-      }
-    }
-
-    headerNameH3.style.display = "block"; // Explicitly set to 'block'
-
-    console.log(
-      `cleanupEditUI: Attempted to set headerNameH3 display to 'block'. Current textContent: "${
-        headerNameH3.textContent
-      }", Inline style: "${headerNameH3.style.display}", Computed style: "${
-        window.getComputedStyle(headerNameH3).display
-      }"`
-    );
-  } else {
-    console.error(
-      "cleanupEditUI: headerNameH3 not found, cannot update name or visibility."
-    );
-  }
-
-  if (editChatNameBtn) {
-    if (showEditButton) {
-      editChatNameBtn.style.display = "inline-block";
-    } else {
-      editChatNameBtn.style.display = "none";
-    }
-  }
-};
-
-// Define the handleChatNameUpdatedInUI function
-window.chatApp.handleChatNameUpdatedInUI = function (chatId, newName) {
-  console.log(
-    `chat.js: handleChatNameUpdatedInUI called for chatId=${chatId}, newName=${newName}`
-  );
-
-  // Update the chat list item
-  const chatListItem = document.querySelector(
-    `.chat-item[data-chat-id="${chatId}"]`
-  );
-  if (chatListItem) {
-    const chatNameElement = chatListItem.querySelector(".chat-name");
-    if (chatNameElement) {
-      chatNameElement.textContent = newName;
-    }
-    chatListItem.dataset.dbName = newName; // Update the data-db-name attribute as well
-    console.log(
-      `chat.js: Updated chat list item for ${chatId} to name ${newName}`
-    );
-  } else {
-    console.warn(
-      `chat.js: Could not find chat list item for chatId=${chatId} to update name.`
-    );
-  }
-
-  // Update the chat header if this is the currently active chat
-  const activeChatItem = document.querySelector(".chat-item.active");
-  if (activeChatItem && activeChatItem.dataset.chatId === chatId) {
-    console.log(
-      `chat.js: Active chat is ${chatId}, updating header directly with newName: \"${newName}\"`
-    );
-    const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
-    if (headerNameH3) {
-      const nameToDisplay = newName ? newName.trim() : "Chat";
-      headerNameH3.textContent = nameToDisplay || "Chat"; // Use newName from server, fallback to "Chat"
-      headerNameH3.style.display = "block"; // Ensure header is visible
-      console.log(
-        `chat.js: Set active chat header to \"${headerNameH3.textContent}\" and display to 'block'`
-      );
-
-      const editBtn = document.getElementById("edit-chat-name-btn");
-      if (editBtn) {
-        // Update edit button's stored name too
-        editBtn.dataset.currentName = nameToDisplay || "Chat";
-      }
-    }
-  } else {
-    console.log(
-      `chat.js: Chat ${chatId} is not the active chat, header not updated by handleChatNameUpdatedInUI directly.`
-    );
-  }
-
-  // If the edit UI was open for this chat, clean it up using the newName from server.
-  const currentInputField = document.querySelector(
-    ".chat-details input.edit-chat-name-input"
-  );
-  if (
-    currentInputField &&
-    activeChatItem &&
-    activeChatItem.dataset.chatId === chatId
+  // Define the cleanupEditUI function first
+  window.chatApp.cleanupEditUI = function (
+    showEditButton = true,
+    nameToSetAndUpdate = null
   ) {
+    const chatDetailsContainer = document.querySelector(".chat-details");
+    if (!chatDetailsContainer) {
+      console.error("cleanupEditUI: .chat-details container not found");
+      return;
+    }
+    const headerNameH3 =
+      chatDetailsContainer.querySelector("h3#chat-name") ||
+      chatDetailsContainer.querySelector("h3") ||
+      document.querySelector("#chat-name");
+    const editChatNameBtn = document.getElementById("edit-chat-name-btn");
+
     console.log(
-      "handleChatNameUpdatedInUI: Edit UI was open for the updated active chat, calling cleanupEditUI."
+      "cleanupEditUI: chatDetailsContainer found:",
+      chatDetailsContainer
     );
-    window.chatApp.cleanupEditUI(true, newName); // Pass newName from server
-  }
-};
+    console.log("cleanupEditUI: headerNameH3:", headerNameH3);
+    console.log("cleanupEditUI: editChatNameBtn:", editChatNameBtn);
 
-// Chat Header Status Update
-window.chatApp.updateChatHeaderStatus = (userId, isOnline) => {
-  const chatHeader = document.getElementById("chat-header");
-  const currentChatId = window.chatWS?.currentChatId;
-
-  if (!chatHeader || !currentChatId) return;
-
-  const activeChatListItem = document.querySelector(
-    `.chat-item.active[data-chat-id="${currentChatId}"]`
-  );
-  if (!activeChatListItem) return;
-
-  const isGroupChat = activeChatListItem.dataset.isGroup === "true";
-
-  if (!isGroupChat) {
-    // For direct chats, the 'userId' is the other participant.
-    // We need to get the other participant's ID from the chat data.
-    // This logic assumes you have a way to get participants of the currentChatId
-    const participants = window.chatList?.getChatParticipants(currentChatId);
-    const otherParticipant = participants?.find(
-      (p) => p.user_id !== window.currentUser?.user_id
+    // Directly query from document to find elements within .chat-details
+    const inputField = document.querySelector(
+      ".chat-details input.edit-chat-name-input"
+    );
+    const saveBtn = document.querySelector(
+      ".chat-details button.save-chat-name-btn"
+    );
+    const cancelBtn = document.querySelector(
+      ".chat-details button.cancel-chat-name-btn"
     );
 
-    if (otherParticipant && otherParticipant.user_id === userId) {
-      const statusElement = chatHeader.querySelector("#chat-status");
-      const onlineIndicator = chatHeader.querySelector("#online-indicator");
+    console.log(
+      "cleanupEditUI: Elements to remove - input:",
+      inputField,
+      "save:",
+      saveBtn,
+      "cancel:",
+      cancelBtn
+    );
 
-      if (statusElement && onlineIndicator) {
-        if (isOnline) {
-          statusElement.textContent = "Online";
-          statusElement.style.color = "green";
-          onlineIndicator.style.backgroundColor = "green";
+    if (inputField) inputField.remove();
+    if (saveBtn) saveBtn.remove();
+    if (cancelBtn) cancelBtn.remove();
+
+    if (headerNameH3) {
+      if (nameToSetAndUpdate) {
+        let trimmedName = "";
+        if (typeof nameToSetAndUpdate === "string") {
+          trimmedName = nameToSetAndUpdate.trim();
         } else {
-          const now = new Date();
-          statusElement.textContent = `Last seen at ${now.toLocaleTimeString(
-            [],
-            { hour: "2-digit", minute: "2-digit" }
-          )} ${now.toLocaleDateString()}`;
-          statusElement.style.color = "red";
-          onlineIndicator.style.backgroundColor = "red";
+          trimmedName = String(nameToSetAndUpdate).trim();
+        }
+
+        if (trimmedName) {
+          headerNameH3.textContent = trimmedName;
+          console.log(
+            `cleanupEditUI: Set headerNameH3.textContent to "${trimmedName}"`
+          );
+          if (editChatNameBtn) {
+            editChatNameBtn.dataset.currentName = trimmedName;
+          }
+        } else {
+          console.warn(
+            `cleanupEditUI: Provided name "${nameToSetAndUpdate}" trims to empty. Retaining previous name: "${headerNameH3.textContent}"`
+          );
         }
       }
-    }
-  } else {
-    // For group chats, you might want to update a general status or list of online members
-    // For now, we'll just log it.
-    console.log(
-      `User ${userId} status changed to ${
-        isOnline ? "online" : "offline"
-      } in group chat ${currentChatId}`
-    );
-    // Potentially update a list of online users in the group chat header if UI supports it.
-  }
-};
 
-setupChatListEventListeners(); // Renamed for clarity
-setupChatInput();
-setupModals();
-setupSearchFunctionality();
-setupFilterTabs();
-initializeEditChatName(); // Add this line
+      headerNameH3.style.display = "block"; // Explicitly set to 'block'
+
+      console.log(
+        `cleanupEditUI: Attempted to set headerNameH3 display to 'block'. Current textContent: "${
+          headerNameH3.textContent
+        }", Inline style: "${headerNameH3.style.display}", Computed style: "${
+          window.getComputedStyle(headerNameH3).display
+        }"`
+      );
+    } else {
+      console.error(
+        "cleanupEditUI: headerNameH3 not found, cannot update name or visibility."
+      );
+    }
+
+    if (editChatNameBtn) {
+      if (showEditButton) {
+        editChatNameBtn.style.display = "inline-block";
+      } else {
+        editChatNameBtn.style.display = "none";
+      }
+    }
+  };
+
+  // Define the handleChatNameUpdatedInUI function
+  window.chatApp.handleChatNameUpdatedInUI = function (chatId, newName) {
+    console.log(
+      `chat.js: handleChatNameUpdatedInUI called for chatId=${chatId}, newName=${newName}`
+    );
+
+    // Update the chat list item
+    const chatListItem = document.querySelector(
+      `.chat-item[data-chat-id="${chatId}"]`
+    );
+    if (chatListItem) {
+      const chatNameElement = chatListItem.querySelector(".chat-name");
+      if (chatNameElement) {
+        chatNameElement.textContent = newName;
+      }
+      chatListItem.dataset.dbName = newName; // Update the data-db-name attribute as well
+      console.log(
+        `chat.js: Updated chat list item for ${chatId} to name ${newName}`
+      );
+    } else {
+      console.warn(
+        `chat.js: Could not find chat list item for chatId=${chatId} to update name.`
+      );
+    }
+
+    // Update the chat header if this is the currently active chat
+    const activeChatItem = document.querySelector(".chat-item.active");
+    if (activeChatItem && activeChatItem.dataset.chatId === chatId) {
+      console.log(
+        `chat.js: Active chat is ${chatId}, updating header directly with newName: \"${newName}\"`
+      );
+      const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
+      if (headerNameH3) {
+        const nameToDisplay = newName ? newName.trim() : "Chat";
+        headerNameH3.textContent = nameToDisplay || "Chat"; // Use newName from server, fallback to "Chat"
+        headerNameH3.style.display = "block"; // Ensure header is visible
+        console.log(
+          `chat.js: Set active chat header to \"${headerNameH3.textContent}\" and display to 'block'`
+        );
+
+        const editBtn = document.getElementById("edit-chat-name-btn");
+        if (editBtn) {
+          // Update edit button's stored name too
+          editBtn.dataset.currentName = nameToDisplay || "Chat";
+        }
+      }
+    } else {
+      console.log(
+        `chat.js: Chat ${chatId} is not the active chat, header not updated by handleChatNameUpdatedInUI directly.`
+      );
+    }
+
+    // If the edit UI was open for this chat, clean it up using the newName from server.
+    const currentInputField = document.querySelector(
+      ".chat-details input.edit-chat-name-input"
+    );
+    if (
+      currentInputField &&
+      activeChatItem &&
+      activeChatItem.dataset.chatId === chatId
+    ) {
+      console.log(
+        "handleChatNameUpdatedInUI: Edit UI was open for the updated active chat, calling cleanupEditUI."
+      );
+      window.chatApp.cleanupEditUI(true, newName); // Pass newName from server
+    }
+  };
+
+  setupChatListEventListeners(); // Renamed for clarity
+  setupChatInput();
+  setupModals();
+  setupSearchFunctionality();
+  setupFilterTabs();
+  initializeEditChatName(); // Add this line
+}
 
 // Chat List Management using Event Delegation
 function setupChatListEventListeners() {
@@ -339,60 +279,6 @@ function updateChatHeader(chatItem) {
       : "Last seen recently";
   }
 }
-
-window.chatApp.updateChatHeaderStatus = (userId, isOnline) => {
-  const chatHeader = document.getElementById("chat-header");
-  const currentChatId = window.chatWS?.currentChatId;
-
-  if (!chatHeader || !currentChatId) return;
-
-  const activeChatListItem = document.querySelector(
-    `.chat-item.active[data-chat-id="${currentChatId}"]`
-  );
-  if (!activeChatListItem) return;
-
-  const isGroupChat = activeChatListItem.dataset.isGroup === "true";
-
-  if (!isGroupChat) {
-    // For direct chats, the 'userId' is the other participant.
-    // We need to get the other participant's ID from the chat data.
-    // This logic assumes you have a way to get participants of the currentChatId
-    const participants = window.chatList?.getChatParticipants(currentChatId);
-    const otherParticipant = participants?.find(
-      (p) => p.user_id !== window.currentUser?.user_id
-    );
-
-    if (otherParticipant && otherParticipant.user_id === userId) {
-      const statusElement = chatHeader.querySelector("#chat-status");
-      const onlineIndicator = chatHeader.querySelector("#online-indicator");
-
-      if (statusElement && onlineIndicator) {
-        if (isOnline) {
-          statusElement.textContent = "Online";
-          statusElement.style.color = "green";
-          onlineIndicator.style.backgroundColor = "green";
-        } else {
-          const now = new Date();
-          statusElement.textContent = `Last seen at ${now.toLocaleTimeString(
-            [],
-            { hour: "2-digit", minute: "2-digit" }
-          )} ${now.toLocaleDateString()}`;
-          statusElement.style.color = "red";
-          onlineIndicator.style.backgroundColor = "red";
-        }
-      }
-    }
-  } else {
-    // For group chats, you might want to update a general status or list of online members
-    // For now, we'll just log it.
-    console.log(
-      `User ${userId} status changed to ${
-        isOnline ? "online" : "offline"
-      } in group chat ${currentChatId}`
-    );
-    // Potentially update a list of online users in the group chat header if UI supports it.
-  }
-};
 
 function initializeEditChatName() {
   const editChatNameBtn = document.getElementById("edit-chat-name-btn");
@@ -552,9 +438,6 @@ function setupChatInput() {
   // Send message on button click
   sendBtn.addEventListener("click", sendMessage);
 
-  // Send message on Enter key (but allow Shift+Enter for new lines)
-  messageInput.addEventListener("click", sendMessage);
-
   // File attachment
   const attachBtn = document.querySelector(".input-action-btn");
   if (attachBtn) {
@@ -582,13 +465,7 @@ function setupChatInput() {
   function sendMessage() {
     const message = messageInput.value.trim();
     if (message) {
-      // Call the global addMessage function
-      if (typeof window.addMessage === "function") {
-        // Parameters: text, isSelf, timestamp, senderName, avatarUrl
-        window.addMessage(message, true, null, null, null);
-      } else {
-        console.error("window.addMessage is not defined. Cannot send message.");
-      }
+      addMessage(message, true);
       messageInput.value = "";
       messageInput.style.height = "auto";
       updateSendButtonState();
@@ -603,116 +480,211 @@ function setupChatInput() {
       }, 1000 + Math.random() * 2000);
     }
   }
-}
 
-// Add message to chat - moved to global scope and assigned to window
-window.addMessage = function (
-  text,
-  isSelf = false,
-  timestamp = null,
-  senderName = null,
-  avatarUrl = null
-) {
-  const chatMessages = document.getElementById("chat-messages");
-  if (!chatMessages) {
-    console.error("addMessage: chat-messages container not found.");
-    return;
-  }
+  function addMessage(text, isSelf = false, timestamp = null) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${isSelf ? "self" : "other"}`;
 
-  const messageDiv = document.createElement("div");
-  messageDiv.className = `message ${isSelf ? "sent" : "received"}`;
+    const currentTime =
+      timestamp ||
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
-  const avatarHtml = avatarUrl
-    ? `<div class="message-avatar"><img src="${escapeHtml(
-        avatarUrl
-      )}" alt="Avatar"></div>`
-    : '<div class="message-avatar"><img src="/img/avatar.webp" alt="Avatar"></div>'; // Default avatar
-
-  const senderNameHtml =
-    !isSelf && senderName
-      ? `<div class="message-sender-name">${escapeHtml(senderName)}</div>`
+    const avatarHtml = !isSelf
+      ? `
+            <div class="message-avatar">
+                <img src="${getAvatarUrl()}" alt="Avatar">
+            </div>
+        `
       : "";
 
-  // Format timestamp
-  let currentTime = "";
-  if (timestamp) {
-    const date = new Date(timestamp);
-    currentTime = date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } else {
-    // Fallback if timestamp is null
-    const now = new Date();
-    currentTime = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+    messageDiv.innerHTML = `
+            ${avatarHtml}
+            <div class="message-content">
+                <div class="message-bubble">
+                    <p>${escapeHtml(text)}</p>
+                </div>
+                <div class="message-info">
+                    <span class="message-time">${currentTime}</span>
+                    ${isSelf ? '<span class="message-status">✓</span>' : ""}
+                </div>
+            </div>
+        `;
+
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+
+    // Animate message appearance
+    messageDiv.style.opacity = "0";
+    messageDiv.style.transform = "translateY(20px)";
+
+    requestAnimationFrame(() => {
+      messageDiv.style.transition = "all 0.3s ease";
+      messageDiv.style.opacity = "1";
+      messageDiv.style.transform = "translateY(0)";
     });
   }
 
-  messageDiv.innerHTML =
-    avatarHtml +
-    '<div class="message-content">' +
-    senderNameHtml +
-    '<div class="message-bubble">' +
-    "<p>" +
-    escapeHtml(text) +
-    "</p>" +
-    "</div>" +
-    '<div class="message-info">' +
-    `<span class="message-time">${currentTime}</span>` +
-    (isSelf ? '<span class="message-status">✓</span>' : "") +
-    "</div>" +
-    "</div>";
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
 
-  chatMessages.appendChild(messageDiv);
-
-  if (typeof window.scrollToBottom === "function") {
-    window.scrollToBottom();
-  } else {
-    console.warn(
-      "window.scrollToBottom function not found after appending message."
+  function getAvatarUrl() {
+    // In a real app, this would come from the selected chat
+    return (
+      document.querySelector(".chat-header .chat-avatar img")?.src ||
+      "/img/avatar.webp"
     );
   }
 
-  // Animate message appearance
-  messageDiv.style.opacity = "0";
-  messageDiv.style.transform = "translateY(20px)";
-
-  requestAnimationFrame(function () {
-    messageDiv.style.transition = "all 0.3s ease";
-    messageDiv.style.opacity = "1";
-    messageDiv.style.transform = "translateY(0)";
-  });
-};
-
-// Ensure scrollToBottom is available globally by assigning to window
-window.scrollToBottom = function () {
-  const chatMessages = document.getElementById("chat-messages");
-  if (chatMessages) {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+  function escapeHtml(text) {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
-};
 
-// Helper function to escape HTML - ensure it's globally accessible if needed by addMessage
-window.escapeHtml = function (text) {
-  if (typeof text !== "string") {
-    if (text === null || typeof text === "undefined") {
-      return ""; // Return empty string for null or undefined
+  // Typing indicator
+  function showTypingIndicator() {
+    const typingIndicator = document.querySelector(".typing-indicator");
+    if (typingIndicator) {
+      typingIndicator.style.display = "block";
+      scrollToBottom();
     }
-    text = String(text); // Convert to string if it's another type (e.g., number)
   }
-  var map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
+
+  function hideTypingIndicator() {
+    const typingIndicator = document.querySelector(".typing-indicator");
+    if (typingIndicator) {
+      typingIndicator.style.display = "none";
+    }
+  }
+
+  // Simulate bot/user responses
+  function simulateResponse(originalMessage) {
+    const responses = [
+      "That's interesting! Tell me more.",
+      "I completely agree with you on that.",
+      "Thanks for sharing that with me.",
+      "That's a great point!",
+      "I'll look into that and get back to you.",
+      "Sounds good! Let's proceed with that plan.",
+      "I appreciate you bringing this up.",
+      "That makes perfect sense.",
+    ];
+
+    const randomResponse =
+      responses[Math.floor(Math.random() * responses.length)];
+    addMessage(randomResponse, false);
+
+    // Update message status to read
+    setTimeout(() => {
+      const lastSelfMessage = document.querySelector(
+        ".message.self:last-of-type .message-status"
+      );
+      if (lastSelfMessage) {
+        lastSelfMessage.textContent = "✓✓";
+        lastSelfMessage.style.color = "var(--accent-clr)";
+      }
+    }, 500);
+  }
+
+  // File upload handling
+  function handleFileUpload(files) {
+    Array.from(files).forEach((file) => {
+      const fileMessage = `📎 Shared a file: ${file.name}`;
+      addMessage(fileMessage, true);
+    });
+  }
+}
+
+// Ensure this function is in the global scope or accessible where needed
+function createNewChatWithWebSocket(selectedUserIds, chatName) {
+  if (!window.chatWS || typeof window.chatWS.createChat !== "function") {
+    console.error(
+      "Chat WebSocket not initialized or createChat not available."
+    );
+    return;
+  }
+
+  if (!selectedUserIds || selectedUserIds.length === 0) {
+    console.error("No users selected for new chat.");
+    return;
+  }
+
+  if (!window.currentUser || !window.currentUser.user_id) {
+    console.error("Current user data not available.");
+    return;
+  }
+
+  const participants = [window.currentUser.user_id, ...selectedUserIds].map(
+    (id) => String(id)
+  );
+  const uniqueParticipants = [...new Set(participants)];
+
+  if (uniqueParticipants.length < 2) {
+    if (typeof showNotification === "function") {
+      showNotification("Cannot create a chat with only yourself.", "warning");
+    }
+    return;
+  }
+
+  let finalChatName = chatName;
+  if (!finalChatName) {
+    const selectedUsersDetails =
+      window.students && Array.isArray(window.students)
+        ? window.students.filter(
+            (student) =>
+              selectedUserIds.includes(String(student.id)) ||
+              selectedUserIds.includes(Number(student.id))
+          )
+        : [];
+
+    const otherParticipantNames = selectedUsersDetails
+      .map((u) => u.firstname)
+      .join(", ");
+    finalChatName = otherParticipantNames
+      ? `Chat with ${otherParticipantNames}`
+      : `Chat (${uniqueParticipants.length} participants)`;
+  }
+  const chatData = {
+    name: finalChatName,
+    participants: uniqueParticipants,
+    // Let the server determine if it's a group chat based on participant count
+    // is_group: uniqueParticipants.length > 2,
   };
-  return text.replace(/[&<>"']/g, function (m) {
-    return map[m];
-  });
-};
+
+  console.log("Creating new chat with data:", chatData);
+  window.chatWS.createChat(chatData);
+
+  const modal = document.getElementById("createChatModal");
+  if (modal && typeof modal.style !== "undefined") {
+    modal.style.display = "none";
+    if (typeof window.resetModalForm === "function") {
+      window.resetModalForm();
+    } else {
+      const userSearchInput = modal.querySelector("#userSearch");
+      const chatNameInput = modal.querySelector("#chatName");
+      const userListContainer = modal.querySelector(".user-list");
+      if (userSearchInput) userSearchInput.value = "";
+      if (chatNameInput) chatNameInput.value = "";
+      if (userListContainer) {
+        userListContainer.innerHTML = "";
+        const checkboxes = userListContainer.querySelectorAll(
+          'input[type="checkbox"]'
+        );
+        if (checkboxes)
+          checkboxes.forEach((checkbox) => (checkbox.checked = false));
+      }
+    }
+  }
+}
 
 // Modal Management
 function setupModals() {

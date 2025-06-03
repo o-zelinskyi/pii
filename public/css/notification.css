@@ -38,18 +38,6 @@
   animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
-  }
-}
-
 /* Message Notification Popup */
 .message-notification {
   background: white;
@@ -60,59 +48,11 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .message-notification:hover {
   background: #f8f9fa;
   transform: translateX(-2px);
-}
-
-/* Notification Item Components */
-.notification-item-avatar {
-  flex-shrink: 0;
-}
-
-.notification-item-avatar img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.notification-item-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.notification-item-sender {
-  margin-bottom: 4px;
-}
-
-.notification-item-sender strong {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.notification-item-preview {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 4px;
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notification-item-time {
-  font-size: 11px;
-  color: #9ca3af;
-  font-weight: 500;
 }
 
 /* Notification Window */
@@ -135,67 +75,7 @@
   padding: 16px;
   border-bottom: 1px solid #e1e8ed;
   font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   background: #f8f9fa;
-}
-
-.notification-header h3 {
-  margin: 0;
-  font-size: 16px;
-  color: #1f2937;
-}
-
-.mark-all-read {
-  background: none;
-  border: none;
-  color: #6366f1;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.mark-all-read:hover {
-  background: #f0f0f0;
-  color: #4338ca;
-}
-
-.notification-content {
-  padding: 8px;
-}
-
-.notification-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #e1e8ed;
-  background: #f8f9fa;
-}
-
-.view-all-messages {
-  width: 100%;
-  background: none;
-  border: 1px solid #e1e8ed;
-  border-radius: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.view-all-messages:hover {
-  background: #f8f9fa;
-}
-
-.view-all-messages a {
-  text-decoration: none;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.view-all-messages:hover a {
-  color: #374151;
 }
 
 .notification-list {
@@ -207,10 +87,4 @@
   padding: 40px 20px;
   text-align: center;
   color: #666;
-}
-
-.no-notifications p {
-  margin: 0;
-  font-size: 14px;
-  color: #9ca3af;
 }

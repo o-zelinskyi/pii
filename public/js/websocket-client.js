@@ -71,232 +71,97 @@ class ChatWebSocket {
     this.socket.on("error", (data) => {
       this.handleError(data);
     });
-
-    // Listen for initial state from server (e.g., total unread count)
-    this.socket.on("initialSessionState", (data) => {
-      this.handleInitialSessionState(data);
-    });
-
-    // Listen for user added to chat
-    this.socket.on("userAddedToChat", (data) => {
-      if (data && data.chat) {
-        this.handleChatNameUpdated({
-          chatId: data.chat._id,
-          newName: data.chat.name,
-        });
-        this.addChatToList(data.chat);
-      }
-    });
   }
 
-  handleInitialSessionState(data) {
-    if (data && typeof data.totalUnreadCount !== "undefined") {
-      console.log(
-        "WS: Received initialSessionState with unread count:",
-        data.totalUnreadCount
-      );
-      this.updateNotificationBell(data.totalUnreadCount);
-      if (data.totalUnreadCount > 0) {
-        // Animate bell if there are unread messages on load
-        this.animateBellIcon();
-      }
-    } else {
-      console.warn(
-        "WS: Received initialSessionState without totalUnreadCount or invalid data:",
-        data
-      );
-    }
-  }
   handleNewMessage(data) {
-    const { message, sender, unreadCount } = data; // Expect unreadCount from server
-    console.log("WS: Received newMessage", JSON.stringify(data, null, 2));
+    const { message, sender } = data;
 
-    // Determine current page and chat context
-    const isOnChatPage = this.isInChatPage;
-    const isInSameChat = isOnChatPage && this.currentChatId === message.chat_id;
-
-    console.log(
-      "WS: Page context - isOnChatPage:",
-      isOnChatPage,
-      "isInSameChat:",
-      isInSameChat,
-      "currentChatId:",
-      this.currentChatId,
-      "message.chat_id:",
-      message.chat_id
-    );
-
-    // Update notification bell and count regardless of current page/chat
-    console.log(
-      "WS: Calling updateNotificationBell with unreadCount:",
-      unreadCount
-    );
-    this.updateNotificationBell(unreadCount);
-
-    // If user is on the chat page and in the specific chat for the new message
-    if (isInSameChat) {
-      // User is viewing the exact chat - add message but don't animate bell
-      console.log(
-        "WS: User in same chat. Adding message to chat, no bell animation."
-      );
-      this.addMessageToChat(message, sender);
-      // Optionally, mark message as read immediately if user is active in chat
-      // this.socket.emit("markAsRead", { chatId: message.chat_id, messageId: message._id });
+    // Check if user is in the same chat
+    if (this.currentChatId === message.chat_id) {
+      if (this.isInChatPage) {
+        // Add message to current chat without notification
+        this.addMessageToChat(message, sender);
+      } else {
+        // Show notification and update chat list
+        this.showMessageNotification(message, sender);
+        this.updateChatList(message.chat_id);
+      }
     } else {
-      // User is either:
-      // 1. Not on chat page at all, OR
-      // 2. On chat page but in a different chat
-      // In both cases, animate bell and add to notification window
-      console.log(
-        "WS: User NOT in same chat or not on chat page. Attempting to animate bell and add notification."
-      );
-      this.animateBellIcon();
-      this.addMessageToNotificationWindow(message, sender);
-      console.log(
-        "WS: User not in same chat - bell animated and notification added (expected)"
-      );
-    }
-
-    // Update the chat list item (e.g., bold, unread count, last message)
-    if (
-      typeof window.chatList !== "undefined" &&
-      window.chatList.updateChatItem
-    ) {
-      window.chatList.updateChatItem(message.chat_id, message, unreadCount);
-    } else {
-      console.warn("window.chatList.updateChatItem is not available.");
+      // Show notification for different chat
+      this.showMessageNotification(message, sender);
+      this.updateChatList(message.chat_id);
     }
   }
 
-  animateBellIcon() {
-    // Renamed from animateBellNotification
+  showMessageNotification(message, sender) {
+    // Only show if not in the same chat or not on chat page
+    if (!this.isInChatPage || this.currentChatId !== message.chat_id) {
+      // Trigger bell animation
+      this.animateBellNotification();
+
+      // Create notification popup
+      this.createMessageNotification(message, sender);
+    }
+  }
+
+  animateBellNotification() {
     const bellElement = document.querySelector(".notification-bell");
     if (bellElement) {
       bellElement.classList.add("animate-bell");
       setTimeout(() => {
         bellElement.classList.remove("animate-bell");
-      }, 1000); // Duration of the bell ring animation
-    } else {
-      console.warn(
-        "WS: .notification-bell element not found. Cannot animate bell."
-      );
+      }, 1000);
     }
   }
 
-  updateNotificationBell(unreadCount) {
-    const bellElement = document.querySelector(".notification-bell");
-    const countElement = document.querySelector(".notification-count");
-
-    if (bellElement && countElement) {
-      if (unreadCount > 0) {
-        countElement.textContent = unreadCount > 99 ? "99+" : unreadCount;
-        countElement.style.display = "flex"; // Use flex for better centering if needed
-        // No need to call animateBellIcon here, handleNewMessage decides when to animate
-      } else {
-        countElement.textContent = "0";
-        countElement.style.display = "none";
-      }
-    }
-  }
-
-  addMessageToNotificationWindow(message, sender) {
-    console.log(
-      "WS: addMessageToNotificationWindow called with message:",
-      JSON.stringify(message, null, 2),
-      "sender:",
-      JSON.stringify(sender, null, 2)
-    );
-    const notificationContent = document.getElementById("notification-content");
-    if (!notificationContent) {
-      console.error(
-        "WS: CRITICAL - Notification content area (#notification-content) not found."
-      );
-      return;
-    }
-    console.log(
-      "WS: Found #notification-content element:",
-      notificationContent
-    );
-
-    // Remove "No new messages" placeholder if it exists
-    const noNotificationsPlaceholder =
-      notificationContent.querySelector(".no-notifications");
-    if (noNotificationsPlaceholder) {
-      console.log(
-        "WS: Found .no-notifications placeholder:",
-        noNotificationsPlaceholder
-      );
-      noNotificationsPlaceholder.style.display = "none";
-    } else {
-      console.warn("WS: .no-notifications placeholder not found.");
-    }
-
-    const notificationItem = document.createElement("div");
-    notificationItem.className = "message-notification"; // Use existing class for styling
-    notificationItem.dataset.chatId = message.chat_id;
-    notificationItem.dataset.messageId = message._id; // Store message ID if needed later
-
-    // Determine avatar: use sender's photo, or a default
-    const avatarSrc =
-      sender && sender.photo
-        ? sender.photo
-        : (window.urlRoot || "") + "/img/avatar.webp";
-
-    notificationItem.innerHTML = `
-      <div class="notification-item-avatar">
-        <img src="${this.escapeHtml(avatarSrc)}" alt="${this.escapeHtml(
-      sender.firstname
-    )}">
-      </div>
-      <div class="notification-item-details">
-        <div class="notification-item-sender">
-          <strong>${this.escapeHtml(sender.firstname)} ${this.escapeHtml(
-      sender.lastname
-    )}</strong>
-        </div>
-        <div class="notification-item-preview">
-          ${this.escapeHtml(message.content.substring(0, 50))}${
+  createMessageNotification(message, sender) {
+    const notification = document.createElement("div");
+    notification.className = "message-notification";
+    notification.innerHTML = `
+            <div class="notification-content">
+                <div class="sender-info">
+                    <strong>${sender.firstname} ${sender.lastname}</strong>
+                </div>
+                <div class="message-preview">
+                    ${message.content.substring(0, 50)}${
       message.content.length > 50 ? "..." : ""
     }
-        </div>
-        <div class="notification-item-time">
-          ${this.formatTime(message.createdAt || message.timestamp)}
-        </div>
-      </div>
-    `;
+                </div>
+            </div>
+        `;
 
-    notificationItem.addEventListener("click", () => {
-      window.location.href = `${window.urlRoot || ""}/chats/messages?chatId=${
-        message.chat_id
-      }`;
-      // Hide the notification window after click
-      const notificationWindow = document.getElementById("notification-window");
-      if (notificationWindow) {
-        notificationWindow.style.display = "none";
-      }
+    notification.addEventListener("click", () => {
+      // Navigate to the chat
+      window.location.href = `/newPiiWithMvc/chats/messages?chatId=${message.chat_id}`;
     });
 
-    // Add to the top of the notification window's content area
-    notificationContent.prepend(notificationItem);
-    console.log("WS: Prepended notification item to #notification-content.");
+    // Add to notification window
+    this.addToNotificationWindow(notification);
+  }
 
-    // Ensure the notification window is visible if it was hidden
-    const notificationWindow = document.getElementById("notification-window");
-    if (notificationWindow) {
-      console.log(
-        "WS: Found #notification-window element. Current display style:",
-        notificationWindow.style.display
-      );
-      // Ensure the window is made visible. The original code mentioned this was tricky.
-      // Forcing it to display 'block' or 'flex' might be necessary if it's 'none'.
-      // Check how notification.js handles visibility.
-      // if (notificationWindow.style.display === "none") {
-      //   notificationWindow.style.display = "block"; // Or 'flex' depending on its usual display type
-      //   console.log("WS: Set #notification-window display to 'block' (or 'flex').");
-      // }
-    } else {
-      console.error("WS: CRITICAL - #notification-window element not found.");
+  addToNotificationWindow(notification) {
+    let notificationWindow = document.querySelector(".notification-window");
+    if (!notificationWindow) {
+      // Create notification window if it doesn't exist
+      notificationWindow = document.createElement("div");
+      notificationWindow.className = "notification-window";
+      notificationWindow.style.display = "none";
+      document.body.appendChild(notificationWindow);
     }
+
+    // Add notification to window
+    notificationWindow.appendChild(notification);
+    notificationWindow.style.display = "flex";
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+      if (notificationWindow.children.length === 0) {
+        notificationWindow.style.display = "none";
+      }
+    }, 5000);
   }
 
   addMessageToChat(message, sender) {
@@ -304,32 +169,15 @@ class ChatWebSocket {
     // and called from here if messages are directly added.
     // For now, displayMessages handles rendering full lists.
     console.log(
-      "addMessageToChat called in websocket-client, delegating to window.addMessage",
+      "addMessageToChat called in websocket-client, ideally delegate to UI script",
       message,
       sender
     );
     if (typeof window.addMessage === "function") {
-      const isSelf =
-        sender &&
-        window.currentUser &&
-        sender.user_id === window.currentUser.user_id;
-      const senderFullName = sender
-        ? `${sender.firstname || ""} ${sender.lastname || ""}`.trim()
-        : null;
-      const senderAvatar = sender ? sender.photo : null; // Assuming sender object has a 'photo' property
-
-      // Use message.createdAt if available, otherwise message.timestamp
-      const messageTimestamp = message.createdAt || message.timestamp;
-
-      // Pass online status to addMessage if supported
-      window.addMessage(
-        message.content,
-        isSelf,
-        messageTimestamp,
-        senderFullName,
-        senderAvatar,
-        sender.isOnline // Pass online status
-      );
+      // Assuming window.addMessage is the function from chat.js
+      // and it can determine if the message is from self based on sender.user_id
+      const isSelf = sender.user_id === window.currentUser.user_id;
+      window.addMessage(message.content, isSelf, message.timestamp, sender);
     } else {
       console.warn(
         "window.addMessage function not found for dynamically adding a single message."
@@ -358,8 +206,6 @@ class ChatWebSocket {
     if (this.socket) {
       this.currentChatId = chatId;
       this.socket.emit("loadMessages", { chatId });
-      // Mark as read
-      this.socket.emit("markAsRead", { chatId });
     }
   }
 
@@ -408,53 +254,20 @@ class ChatWebSocket {
     }
   }
 
-  // Add user to existing chat (group chat)
-  addUserToChat(chatId, userIds) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit("addUserToChat", { chatId, userIds });
-    }
-  }
-
   updateUserStatus(userId, isOnline) {
     // Update user status in the UI
     const userElements = document.querySelectorAll(
       `[data-user-id="${userId}"]`
     );
     userElements.forEach((element) => {
-      const statusIndicator = element.querySelector(".online-indicator");
-      const statusTextElement = element.querySelector(".status-text"); // Assuming you add a span for status text
-
       if (isOnline) {
         element.classList.add("online");
         element.classList.remove("offline");
-        if (statusIndicator) {
-          statusIndicator.style.backgroundColor = "green";
-        }
-        if (statusTextElement) {
-          statusTextElement.textContent = "Online";
-          statusTextElement.style.color = "green";
-        }
       } else {
         element.classList.add("offline");
         element.classList.remove("online");
-        if (statusIndicator) {
-          statusIndicator.style.backgroundColor = "red";
-        }
-        if (statusTextElement) {
-          const now = new Date();
-          statusTextElement.textContent = `Last seen at ${now.toLocaleTimeString()} ${now.toLocaleDateString()}`;
-          statusTextElement.style.color = "red";
-        }
       }
     });
-
-    // Update chat header status if the updated user is part of the current chat
-    if (
-      window.chatApp &&
-      typeof window.chatApp.updateChatHeaderStatus === "function"
-    ) {
-      window.chatApp.updateChatHeaderStatus(userId, isOnline);
-    }
   }
   displayMessages(messages, chatId) {
     if (this.currentChatId !== chatId) return;
@@ -466,14 +279,15 @@ class ChatWebSocket {
     const existingMessages = chatMessages.querySelectorAll(".message");
     existingMessages.forEach((msg) => msg.remove());
 
+    // Add messages - need to get real sender data for each message
     messages.forEach((message) => {
       // Get sender info from the message or use fallback
       const sender = {
         user_id: message.sender_id,
         firstname: message.senderName || "User",
         lastname: message.senderLastname || "",
-        isOnline: message.isOnline || false, // Add online status if available
       };
+
       this.addMessageToChat(message, sender);
     });
   }
@@ -503,16 +317,6 @@ class ChatWebSocket {
     chats.forEach((chat) => {
       this.addChatToList(chat);
     });
-
-    // Highlight current user in chat list
-    if (window.currentUser) {
-      const userChatItems = document.querySelectorAll(
-        `.chat-item[data-user-id="${window.currentUser.user_id}"]`
-      );
-      userChatItems.forEach((item) => {
-        item.classList.add("current-user");
-      });
-    }
   }
 
   addChatToList(chat) {
@@ -531,18 +335,8 @@ class ChatWebSocket {
     const chatElement = document.createElement("li");
     chatElement.className = "chat-item";
     chatElement.dataset.chatId = chat._id; // Use chat._id from MongoDB
-    chatElement.dataset.isGroup = chat.is_group_chat || chat.isGroup;
-    // Highlight current user
-    if (
-      chat.participants &&
-      chat.participants.some(
-        (p) => p.user_id === (window.currentUser && window.currentUser.user_id)
-      )
-    ) {
-      chatElement.dataset.userId = window.currentUser.user_id;
-    }
-
-    // Server already handles proper chat name generation for 1-on-1 chats
+    // chatElement.dataset.dbName = chat.name; // Store the original DB name - will be set below
+    chatElement.dataset.isGroup = chat.is_group_chat || chat.isGroup; // Store if it's a group chat    // Server already handles proper chat name generation for 1-on-1 chats
     // Trust the server's chat name which includes user names for 1-on-1 chats
     let chatNameToDisplay = chat.name || "Unnamed Chat";
     let avatarUrl = `${window.urlRoot || ""}/img/avatar.webp`; // Default avatar
@@ -572,7 +366,9 @@ class ChatWebSocket {
 
     chatElement.innerHTML = `
       <div class="chat-avatar">
-        
+        <img src="${this.escapeHtml(avatarUrl)}" alt="${this.escapeHtml(
+      chatNameToDisplay
+    )}">
         ${isOnline ? '<div class="online-indicator"></div>' : ""}
       </div>
       <div class="chat-details">
@@ -596,15 +392,14 @@ class ChatWebSocket {
   }
 
   escapeHtml(text) {
-    if (typeof text !== "string") {
-      return String(text); // Ensure text is a string
-    }
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   handleReconnection() {
