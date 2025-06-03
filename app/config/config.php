@@ -10,4 +10,4 @@ define('FTP_PASS', '');
 define('FTP_PORT', 21);
 
 define('APPROOT', dirname(dirname(__FILE__)));
-define('URLROOT', 'http://localhost/newpiiwithmvc');
+define('URLROOT', 'http://localhost/github');

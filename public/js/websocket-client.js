@@ -132,7 +132,7 @@ class ChatWebSocket {
 
     notification.addEventListener("click", () => {
       // Navigate to the chat
-      window.location.href = `/newPiiWithMvc/chats/messages?chatId=${message.chat_id}`;
+      window.location.href = `/github/chats/messages?chatId=${message.chat_id}`;
     });
 
     // Add to notification window

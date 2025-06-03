@@ -17,7 +17,7 @@ const io = socketIo(server, {
     origin: [
       "http://localhost",
       "http://localhost:80",
-      "http://localhost/newpiiwithmvc",
+      "http://localhost/github",
     ],
     methods: ["GET", "POST"],
     credentials: true,
@@ -31,7 +31,7 @@ app.use(
     origin: [
       "http://localhost",
       "http://localhost:80",
-      "http://localhost/newpiiwithmvc",
+      "http://localhost/github",
     ],
     credentials: true,
   })
@@ -959,7 +959,7 @@ app.get("/api/students", async (req, res) => {
   try {
     // Fetch real students from MariaDB via direct PHP endpoint
     const response = await axios.get(
-      "http://localhost/newPiiWithMvc/public/api/students.php"
+      "http://localhost/github/public/api/students.php"
     );
 
     if (response.data.success) {

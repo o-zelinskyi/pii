@@ -129,7 +129,7 @@ class ChatList {
       // Use the correct API endpoint: URLROOT is defined in config.php, adjust if necessary for JS context
       // Assuming URLROOT is accessible globally or passed to this class
       const urlRoot =
-        document.body.dataset.urlroot || "http://localhost/newpiiwithmvc"; // Fallback if not set
+        document.body.dataset.urlroot || "http://localhost/github"; // Fallback if not set
       const currentUserId = this.getCurrentUserId();
       const response = await fetch(
         `${urlRoot}/api/user/list?search=${search}&exclude_id=${currentUserId}`
@@ -176,10 +176,6 @@ class ChatList {
         (user) => `
       <div class="user-item" data-user-id="${user.id}">
         <div class="user-avatar">
-          <img src="${user.photo}" alt="${user.firstname} ${user.lastname}" 
-               onerror="this.src='${
-                 window.location.origin
-               }/newPiiWithMvc/public/img/avatar.webp'">
           <span class="status-indicator ${
             user.isOnline ? "online" : "offline"
           }"></span>
@@ -243,7 +239,7 @@ class ChatList {
 
       // Send request to create chat
       const response = await fetch(
-        `${window.location.origin}/newPiiWithMvc/chat-server/api/create-chat`,
+        `${window.location.origin}/github/chat-server/api/create-chat`,
         {
           method: "POST",
           headers: {
@@ -265,7 +261,7 @@ class ChatList {
 
         // Redirect to new chat or refresh chat list
         if (result.chatId) {
-          window.location.href = `${window.location.origin}/newPiiWithMvc/chats/view/${result.chatId}`;
+          window.location.href = `${window.location.origin}/github/chats/view/${result.chatId}`;
         }
       } else {
         throw new Error(result.message || "Failed to create chat");
@@ -293,7 +289,7 @@ class ChatList {
   async syncUserData(action, userData) {
     try {
       const response = await fetch(
-        `${window.location.origin}/newPiiWithMvc/public/api/users.php`,
+        `${window.location.origin}/github/public/api/users.php`,
         {
           method: "POST",
           headers: {

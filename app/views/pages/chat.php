@@ -37,7 +37,6 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
   <div class="chat-header" id="chat-header">
     <div class="chat-info">
       <div class="chat-avatar">
-        <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="User Avatar" id="chat-avatar">
         <div class="online-indicator" id="online-indicator"></div>
       </div>
       <div class="chat-details">
@@ -50,28 +49,6 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
         </button>
         <span class="status" id="chat-status">Choose a conversation to start messaging</span>
       </div>
-    </div>
-    <div class="chat-actions">
-      <button class="action-btn" title="Search" onclick="toggleSearchMessages()">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-        </svg>
-      </button>
-      <button class="action-btn" title="Call" onclick="startCall()">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-        </svg>
-      </button>
-      <button class="action-btn" title="Video Call" onclick="startVideoCall()">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
-        </svg>
-      </button>
-      <button class="action-btn" title="More" onclick="toggleChatMenu()">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-        </svg>
-      </button>
     </div>
   </div>
 
@@ -99,45 +76,13 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
           <p>Start a conversation by sending a message</p>
         </div>
       </div>
-
-      <!-- Typing indicator -->
-      <div class="typing-indicator" style="display: none;" id="typing-indicator">
-        <div class="message other">
-          <div class="message-avatar">
-            <img src="<?php echo URLROOT; ?>/img/avatar.webp" alt="Avatar">
-          </div>
-          <div class="message-content">
-            <div class="typing-bubble">
-              <div class="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Reply Preview -->
-    <div class="reply-preview" id="replyPreview" style="display: none;">
-      <div class="reply-content">
-        <div class="reply-info">
-          <span class="reply-to">Replying to <strong id="reply-to-name">User</strong></span>
-          <button class="cancel-reply" onclick="cancelReply()">×</button>
-        </div>
-        <div class="reply-message" id="reply-message">Message content</div>
-      </div>
-    </div>
+
 
     <!-- Chat Input -->
     <div class="chat-input-container" id="chat-input-container" style="display: none;">
       <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
-      <button class="input-action-btn" title="Emoji" onclick="toggleEmojiPicker()">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-        </svg>
-      </button>
       <button id="send-btn" class="send-btn" title="Send">
         <svg width="20" height="20" viewBox="0 0 24 24">
           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

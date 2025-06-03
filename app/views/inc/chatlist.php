@@ -30,24 +30,10 @@
   <div class="chat-filters">
     <button class="filter-tab active" data-filter="all">All</button>
     <button class="filter-tab" data-filter="unread">Unread</button>
-    <button class="filter-tab" data-filter="groups">Groups</button>
   </div>
   <!-- Chat List -->
   <div class="chatlist-content">
     <ul class="chat-list" id="chatListContainer">
-      <!-- No chats message -->
-      <div id="noChatMessage" class="no-chats-container">
-        <div class="no-chats-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        <h3>No conversations yet</h3>
-        <p>Start a new conversation to get started</p>
-        <button class="start-chat-btn" onclick="document.getElementById('createChatBtn').click()">
-          Start New Chat
-        </button>
-      </div>
     </ul>
   </div>
 </nav>

@@ -480,8 +480,7 @@ function setupChatInput() {
       }, 1000 + Math.random() * 2000);
     }
   }
-
-  function addMessage(text, isSelf = false, timestamp = null) {
+  function addMessage(text, isSelf = false, timestamp = null, sender = null) {
     const messageDiv = document.createElement("div");
     messageDiv.className = `message ${isSelf ? "self" : "other"}`;
 
@@ -495,7 +494,7 @@ function setupChatInput() {
     const avatarHtml = !isSelf
       ? `
             <div class="message-avatar">
-                <img src="${getAvatarUrl()}" alt="Avatar">
+                <img src="${getAvatarUrl(sender)}" alt="Avatar">
             </div>
         `
       : "";
@@ -527,11 +526,18 @@ function setupChatInput() {
     });
   }
 
+  // Expose addMessage function to window for WebSocket integration
+  window.addMessage = addMessage;
+
   function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
+  function getAvatarUrl(sender = null) {
+    // If sender information is provided, use it for avatar
+    if (sender && sender.avatar) {
+      return sender.avatar;
+    }
 
-  function getAvatarUrl() {
     // In a real app, this would come from the selected chat
     return (
       document.querySelector(".chat-header .chat-avatar img")?.src ||
