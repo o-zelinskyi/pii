@@ -1928,3 +1928,253 @@ body {
     font-size: 11px;
   }
 }
+
+/* Add Users Modal Specific Styling */
+#addUsersModal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+#addUsersModal .modal-content {
+  background: white;
+  margin: 5% auto;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+#addUsersModal .modal-header {
+  padding: 24px;
+  border-bottom: 1px solid #e1e5e9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+#addUsersModal .modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-clr);
+}
+
+#addUsersModal .close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: all 0.2s ease;
+}
+
+#addUsersModal .close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-clr);
+}
+
+#addUsersModal .modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+#addUsersModal .current-chat-info {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent-clr);
+}
+
+#addUsersModal .current-chat-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-clr);
+}
+
+#addUsersModal .current-chat-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+#addUsersModal .search-users {
+  margin-bottom: 20px;
+}
+
+#addUsersModal .search-users input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8f9fa;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+#addUsersModal .search-users input:focus {
+  border-color: var(--accent-clr);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 68, 142, 0.1);
+}
+
+#addUsersModal .users-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+#addUsersModal .user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#addUsersModal .user-item:hover {
+  background-color: #f8f9fa;
+}
+
+#addUsersModal .user-item:last-child {
+  border-bottom: none;
+}
+
+#addUsersModal .user-item.selected {
+  background-color: rgba(0, 68, 142, 0.1);
+  border-color: var(--accent-clr);
+}
+
+#addUsersModal .user-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-clr);
+}
+
+#addUsersModal .user-info {
+  flex: 1;
+}
+
+#addUsersModal .user-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-clr);
+}
+
+#addUsersModal .user-info .user-status,
+#addUsersModal .user-info .user-group {
+  font-size: 12px;
+  color: #6b7280;
+  margin-right: 8px;
+}
+
+#addUsersModal .modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #e1e5e9;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+#addUsersModal .modal-footer button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#confirmAddUsersBtn {
+  background: #007bff;
+  color: white;
+}
+
+#confirmAddUsersBtn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+#confirmAddUsersBtn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#addUsersModal .loading-users {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+#addUsersModal .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e1e5e9;
+  border-top: 3px solid var(--accent-clr);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+#addUsersModal .loading-users p {
+  margin: 0;
+  font-size: 14px;
+}
+
+#addUsersModal .no-users {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+#addUsersModal .error-message {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+}
+
+#addUsersModal .error-message button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#addUsersModal .error-message button:hover {
+  background: #0056b3;
+}

@@ -3,8 +3,10 @@ $sitename = 'Messages';
 require APPROOT . '/views/inc/head.php'; ?>
 <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/chatlist.css" />
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script type="module" src="<?php echo URLROOT; ?>/js/websocket-client.js"></script>
-<script src="<?php echo URLROOT; ?>/js/chat.js" defer></script>
+<script src="<?php echo URLROOT; ?>/js/notification-system.js"></script>
+<script src="<?php echo URLROOT; ?>/js/websocket-client.js"></script>
+<script src="<?php echo URLROOT; ?>/js/add-users.js"></script>
+<script src="<?php echo URLROOT; ?>/js/chat.js"></script>
 <script>
   // Pass PHP data to JavaScript
   window.currentUser = <?php echo json_encode($data['currentUser']); ?>;
@@ -36,11 +38,15 @@ require APPROOT . '/views/inc/chatlist.php'; ?>
   <div class="chat-header" id="chat-header">
     <div class="chat-info">
       <div class="chat-details">
-        <h3 style="margin: 0;" id="chat-name">Select a chat</h3> <!-- ADDED for chat name -->
-        <button id="edit-chat-name-btn" class="edit-chat-name-btn" style="display:none; margin-left: 10px; background: none; border: none; cursor: pointer;" title="Edit chat name">
+        <h3 style="margin: 0;" id="chat-name">Select a chat</h3> <!-- ADDED for chat name --> <button id="edit-chat-name-btn" class="edit-chat-name-btn" style="display:none; margin-left: 10px; background: none; border: none; cursor: pointer;" title="Edit chat name">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
             <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.793l-2.03-2.03L13.502.734a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
             <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+          </svg>
+        </button>
+        <button id="add-users-btn" class="add-users-btn" style="display:none; margin-left: 10px; background: none; border: none; cursor: pointer;" title="Add users to group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus" viewBox="0 0 16 16">
+            <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 1c-1.11 0-2.08.402-2.599 1M13 8V6a1 1 0 0 0-2 0v2h-2a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2z" />
           </svg>
         </button>
         <span class="status" id="chat-status">Choose a conversation to start messaging</span>

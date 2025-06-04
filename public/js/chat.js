@@ -167,13 +167,13 @@ function initializeChatApp() {
       window.chatApp.cleanupEditUI(true, newName); // Pass newName from server
     }
   };
-
   setupChatListEventListeners(); // Renamed for clarity
   setupChatInput();
   setupModals();
   setupSearchFunctionality();
   setupFilterTabs();
   initializeEditChatName(); // Add this line
+  initializeAddUsersButton(); // Add this line for "Add Users" functionality
 }
 
 // Chat List Management using Event Delegation
@@ -236,10 +236,10 @@ function updateChatHeader(chatItem) {
   // chatNameToDisplay will be the dbChatName (trimmed) or listItemChatName (trimmed),
   // falling back to "Chat" if both are empty after trimming.
   const chatNameToDisplay = dbChatName || listItemChatName || "Chat";
-
   const headerNameH3 = document.querySelector(".chat-details h3#chat-name");
   const headerStatus = document.querySelector(".chat-details .status");
   const editChatNameBtn = document.getElementById("edit-chat-name-btn");
+  const addUsersBtn = document.getElementById("add-users-btn");
 
   if (headerNameH3) {
     headerNameH3.textContent = chatNameToDisplay; // Already incorporates trimming and "Chat" fallback
@@ -252,7 +252,6 @@ function updateChatHeader(chatItem) {
       // editBtn.dataset.currentName = chatNameToDisplay; // Revisit this if it causes issues with original name
     }
   }
-
   if (editChatNameBtn) {
     if (isGroupChat) {
       editChatNameBtn.style.display = "inline-block";
@@ -260,6 +259,16 @@ function updateChatHeader(chatItem) {
       editChatNameBtn.dataset.currentName = chatNameToDisplay; // Store the potentially friendly name
     } else {
       editChatNameBtn.style.display = "none";
+    }
+  }
+
+  // Handle "Add Users" button visibility and setup
+  if (addUsersBtn) {
+    if (isGroupChat) {
+      addUsersBtn.style.display = "inline-block";
+      addUsersBtn.dataset.chatId = chatId;
+    } else {
+      addUsersBtn.style.display = "none";
     }
   }
   if (headerStatus) {
@@ -451,6 +460,78 @@ function initializeEditChatName() {
       );
     if (!chatHeaderDetails)
       console.error("initializeEditChatName: .chat-details not found at init.");
+  }
+}
+
+// Initialize "Add Users" button functionality
+function initializeAddUsersButton() {
+  const addUsersBtn = document.getElementById("add-users-btn");
+
+  if (addUsersBtn) {
+    addUsersBtn.addEventListener("click", function () {
+      const chatId = this.dataset.chatId;
+
+      if (!chatId) {
+        console.error("Add Users button clicked but no chat ID found");
+        return;
+      }
+
+      console.log(`Add Users button clicked for chat ID: ${chatId}`);
+
+      // Get current chat info for better context
+      const activeChatItem = document.querySelector(".chat-item.active");
+      let chatName = "Group Chat";
+      let existingParticipants = [];
+
+      if (activeChatItem) {
+        const chatNameElement = activeChatItem.querySelector(".chat-name");
+        if (chatNameElement) {
+          chatName = chatNameElement.textContent;
+        }
+
+        // Get existing participants from the chat item data
+        if (activeChatItem.dataset.participants) {
+          try {
+            existingParticipants = JSON.parse(
+              activeChatItem.dataset.participants
+            );
+          } catch (e) {
+            console.warn("Failed to parse participants data:", e);
+          }
+        }
+      } // Check if AddUsersManager is available
+      if (
+        window.addUsersManager &&
+        typeof window.addUsersManager.openModal === "function"
+      ) {
+        console.log("AddUsersManager found, opening modal with:", {
+          chatId,
+          chatName,
+          existingParticipants,
+        });
+        // Use the global instance to open the modal
+        window.addUsersManager.openModal(
+          chatId,
+          chatName,
+          existingParticipants
+        );
+      } else {
+        console.error(
+          "AddUsersManager is not available. window.addUsersManager:",
+          window.addUsersManager
+        );
+        if (typeof showNotification === "function") {
+          showNotification(
+            "Add Users functionality is not available.",
+            "error"
+          );
+        }
+      }
+    });
+  } else {
+    console.error(
+      "initializeAddUsersButton: #add-users-btn not found at init."
+    );
   }
 }
 

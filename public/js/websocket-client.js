@@ -71,6 +71,11 @@ class ChatWebSocket {
     this.socket.on("error", (data) => {
       this.handleError(data);
     });
+
+    // Listen for user added to chat
+    this.socket.on("userAddedToChat", (data) => {
+      this.handleUserAddedToChat(data);
+    });
   }
 
   handleNewMessage(data) {
@@ -137,6 +142,15 @@ class ChatWebSocket {
 
     // Add to notification window
     this.addToNotificationWindow(notification);
+  }
+
+  // Notification method for WebSocket events
+  showNotification(message, type = "info") {
+    if (typeof window.showNotification === "function") {
+      window.showNotification(message, type);
+    } else {
+      console.log(`Notification: ${message} (${type})`);
+    }
   }
 
   addToNotificationWindow(notification) {
@@ -697,6 +711,53 @@ class ChatWebSocket {
       this.socket.emit("userTyping", { chatId, isTyping });
     }
   }
+
+  addUserToChat(chatId, userId) {
+    if (this.socket && chatId && userId) {
+      const payloadToSend = {
+        chatId: chatId,
+        userId: parseInt(userId),
+      };
+
+      console.log(
+        "WebSocket: Adding user to chat with payload:",
+        payloadToSend
+      );
+      this.socket.emit("addUserToChat", payloadToSend);
+    } else {
+      console.error("WebSocket: addUserToChat - missing required parameters");
+    }
+  }
+  handleUserAddedToChat(data) {
+    const { chatId, userId, addedBy } = data;
+    console.log(`User ${userId} was added to chat ${chatId} by ${addedBy}`);
+
+    // Refresh chat list to show updated participant count
+    this.refreshUserChats();
+
+    // Show notification
+    if (this.currentChatId !== chatId) {
+      if (typeof showNotification === "function") {
+        showNotification(`A user was added to a group chat`, "info");
+      }
+    } else {
+      // Update current chat interface
+      if (typeof showNotification === "function") {
+        showNotification(`New user added to the chat`, "success");
+      }
+      // Reload messages to refresh participant info
+      if (typeof this.loadMessages === "function") {
+        this.loadMessages(chatId);
+      }
+    }
+  }
+
+  // Method to refresh user chats by requesting from server
+  refreshUserChats() {
+    if (this.socket) {
+      this.socket.emit("getUserChats");
+    }
+  }
 }
 
 // Initialize WebSocket connection
@@ -730,7 +791,10 @@ function initializeWebSocket() {
 
 // Make functions globally available immediately
 window.initializeChatWebSocket = initializeChatWebSocket;
-window.initializeWebSocket = initializeWebSocket;
 window.ChatWebSocket = ChatWebSocket;
 
-// Also make it available for immediate use
+// Legacy function name support
+function initializeWebSocket(userData, serverUrl) {
+  return initializeChatWebSocket(userData, serverUrl);
+}
+window.initializeWebSocket = initializeWebSocket;

@@ -65,6 +65,36 @@
   </div>
 </div>
 
+<!-- Modal for adding users to group chat -->
+<div id="addUsersModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add Users to Chat</h2>
+      <span class="close-button" id="closeAddUsersModal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="current-chat-info">
+        <h3 id="addUsersModalChatName">Group Chat</h3>
+        <p>Select users to add to this group:</p>
+      </div>
+      <div class="search-users">
+        <input type="text" placeholder="Search users..." id="addUsersSearch">
+      </div>
+      <div class="users-list">
+        <div id="addUsersListContainer">
+          <div class="loading-users">
+            <div class="spinner"></div>
+            <p>Loading users...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="confirmAddUsersBtn" disabled>Add Selected Users</button>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Search functionality
