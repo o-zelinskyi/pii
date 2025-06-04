@@ -4,9 +4,18 @@ import { setupStudentTable } from "./studentTable.js";
 import { setupModalWindows } from "./modals.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 App.js DOMContentLoaded fired");
+
   // Use globally available setupNotifications function
+  console.log(
+    "📋 Checking for setupNotifications function:",
+    typeof window.setupNotifications
+  );
   if (window.setupNotifications) {
+    console.log("🔔 Calling setupNotifications...");
     setupNotifications();
+  } else {
+    console.error("❌ setupNotifications function not found on window object");
   }
 
   setupNavigationAndMenus();

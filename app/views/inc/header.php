@@ -21,7 +21,8 @@
                 <button class="mark-all-read" onclick="markAllAsRead()">Mark all as read</button>
               </div>
               <div class="notification-content" id="notification-content">
-                <div class="no-notifications" id="no-notifications">
+
+                <div class="no-notifications" id="no-notifications" style="display: none;">
                   <p>No new messages</p>
                 </div>
               </div>

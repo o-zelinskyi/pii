@@ -1,0 +1,33 @@
+.simple-test {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  background: blue;
+  color: white;
+  padding: 10px;
+  margin: 20px;
+}
+
+.simple-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1000;
+}
+
+.simple-popup.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.simple-test:hover .simple-popup {
+  opacity: 1;
+  visibility: visible;
+}

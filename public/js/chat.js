@@ -1273,7 +1273,7 @@ window.loadChat = function (chatId) {
   if (chatItem) {
     // Chat exists in DOM - load it directly
     console.log(`Chat ${chatId} found in DOM, loading directly`);
-    
+
     // Remove active class from currently active item
     const chatListContainer = document.getElementById("chatListContainer");
     const currentlyActive =
@@ -1315,18 +1315,22 @@ window.loadChat = function (chatId) {
   } else {
     // Chat not found in DOM - check if we're on the chat page
     console.log(`Chat ${chatId} not found in DOM, checking page context`);
-    
-    const isOnChatPage = window.location.pathname.includes('/chats') || 
-                        window.location.pathname.includes('/messages');
-    
+
+    const isOnChatPage =
+      window.location.pathname.includes("/chats") ||
+      window.location.pathname.includes("/messages");
+
     if (isOnChatPage) {
       // We're on chat page but chat list might not be loaded yet
       console.log(`On chat page, attempting to load chat list and retry`);
-      
+
       // Try to load the chat list first, then retry
-      if (window.chatWS && typeof window.chatWS.refreshUserChats === 'function') {
+      if (
+        window.chatWS &&
+        typeof window.chatWS.refreshUserChats === "function"
+      ) {
         window.chatWS.refreshUserChats();
-        
+
         // Wait a moment for the chat list to load, then retry
         setTimeout(() => {
           const retryItem = document.querySelector(
@@ -1346,7 +1350,9 @@ window.loadChat = function (chatId) {
         }, 1000);
       } else {
         // No refresh function available, just set current chat ID
-        console.log(`No refresh function, setting current chat ID to ${chatId}`);
+        console.log(
+          `No refresh function, setting current chat ID to ${chatId}`
+        );
         if (window.chatWS) {
           window.chatWS.currentChatId = chatId;
           window.chatWS.loadMessages(chatId);
@@ -1355,8 +1361,10 @@ window.loadChat = function (chatId) {
       return true;
     } else {
       // Not on chat page - navigate to chat page with the chat ID
-      console.log(`Not on chat page, navigating to chat page with chatId: ${chatId}`);
-      const chatUrl = `${window.urlRoot || ''}/chats/messages?chatId=${chatId}`;
+      console.log(
+        `Not on chat page, navigating to chat page with chatId: ${chatId}`
+      );
+      const chatUrl = `${window.urlRoot || ""}/chats/messages?chatId=${chatId}`;
       window.location.href = chatUrl;
       return true;
     }

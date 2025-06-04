@@ -136,12 +136,10 @@ class ChatWebSocket {
 
     notification.addEventListener("click", (e) => {
       e.preventDefault();
-      e.stopPropagation();
-
-      // Hide notification window first
+      e.stopPropagation(); // Hide notification window first
       const notificationWindow = document.querySelector(".notification-window");
       if (notificationWindow) {
-        notificationWindow.style.display = "none";
+        notificationWindow.classList.remove("show");
       }
 
       // Load the specific chat
@@ -177,16 +175,12 @@ class ChatWebSocket {
   addToNotificationWindow(notification) {
     let notificationWindow = document.querySelector(".notification-window");
     if (!notificationWindow) {
-      // Create notification window if it doesn't exist
-      notificationWindow = document.createElement("div");
+      // Create notification window if it doesn't exist      notificationWindow = document.createElement("div");
       notificationWindow.className = "notification-window";
-      notificationWindow.style.display = "none";
       document.body.appendChild(notificationWindow);
-    }
-
-    // Add notification to window
+    } // Add notification to window
     notificationWindow.appendChild(notification);
-    notificationWindow.style.display = "flex";
+    notificationWindow.classList.add("show");
 
     // Store reference to timeout for potential clearing
     const timeoutId = setTimeout(() => {
@@ -194,7 +188,7 @@ class ChatWebSocket {
         notification.remove();
       }
       if (notificationWindow.children.length === 0) {
-        notificationWindow.style.display = "none";
+        notificationWindow.classList.remove("show");
       }
     }, 10000); // Increased to 10 seconds for better UX
 
@@ -828,7 +822,7 @@ class ChatWebSocket {
       // Hide the notification dropdown
       const notificationWindow = document.querySelector(".notification-window");
       if (notificationWindow) {
-        notificationWindow.style.display = "none";
+        notificationWindow.classList.remove("show");
       }
 
       // Navigate to the chat

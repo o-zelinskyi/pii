@@ -99,19 +99,6 @@ header {
   font-weight: bold;
 }
 
-.notification-window {
-  display: none;
-  flex-direction: column;
-  position: absolute;
-  z-index: 1;
-  top: 100%;
-  width: 200px;
-  overflow: auto;
-  background-color: #fff;
-  border: 1px solid var(--line-clr);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
 .notification-content {
   background-color: #fefefe;
   padding: 10px;
@@ -179,7 +166,6 @@ header {
   padding: 8px;
 }
 
-
 .right-section a {
   padding: 7px;
   background-color: var(--hover-clr);
@@ -194,7 +180,8 @@ header {
   background-color: var(--accent-clr);
 }
 
-.login, .register {
+.login,
+.register {
   padding: 8px;
   background-color: var(--hover-clr);
   border: none;
@@ -204,6 +191,7 @@ header {
   border-radius: 5px;
 }
 
-.login:hover, .register:hover {
+.login:hover,
+.register:hover {
   background-color: var(--accent-clr);
 }
