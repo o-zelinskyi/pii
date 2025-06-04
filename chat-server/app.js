@@ -409,31 +409,63 @@ io.on("connection", (socket) => {
         });
       });
     }
-  });
-
-  // Load chat messages
+  }); // Load chat messages
   socket.on("loadMessages", async (data) => {
     try {
       const { chatId, page = 1, limit = 50 } = data;
       const user = activeUsers.get(socket.id);
+
+      console.log(
+        `loadMessages called with chatId: ${chatId}, type: ${typeof chatId}`
+      );
 
       if (!user) {
         socket.emit("error", { message: "User not authenticated" });
         return;
       }
 
+      // Handle both ObjectId strings and numeric IDs
+      let searchQuery;
+
+      // Convert to string first and check if it's a valid ObjectId
+      const chatIdStr = String(chatId);
+      console.log(`Checking if '${chatIdStr}' is a valid ObjectId`);
+
+      if (
+        mongoose.Types.ObjectId.isValid(chatIdStr) &&
+        chatIdStr.length === 24
+      ) {
+        // Valid ObjectId - use it directly
+        console.log(`Valid ObjectId detected: ${chatIdStr}`);
+        searchQuery = { _id: chatIdStr };
+      } else {
+        // Not a valid ObjectId - this is likely a legacy numeric ID
+        console.log(
+          `Invalid ObjectId format for chatId: ${chatIdStr}, treating as legacy ID`
+        );
+        socket.emit("error", {
+          message:
+            "Invalid chat ID format. Please refresh the page and try again.",
+          code: "INVALID_CHAT_ID",
+        });
+        return;
+      }
+
       // Check if user is participant of the chat
       const chat = await Chat.findOne({
-        _id: chatId,
+        ...searchQuery,
         "participants.user_id": user.user_id,
         "participants.leftAt": null,
       });
-
       if (!chat) {
         socket.emit("error", { message: "Chat not found or access denied" });
         return;
       }
-      const messages = await Message.find({ chat_id: chatId })
+
+      // Use the actual chat ObjectId for queries
+      const actualChatId = chat._id;
+
+      const messages = await Message.find({ chat_id: actualChatId })
         .populate("replyTo")
         .sort({ createdAt: -1 })
         .limit(limit * page)
@@ -454,7 +486,7 @@ io.on("connection", (socket) => {
       // Mark messages as read
       await Message.updateMany(
         {
-          chat_id: chatId,
+          chat_id: actualChatId,
           sender_id: { $ne: user.user_id },
           "readBy.user_id": { $ne: user.user_id },
         },
@@ -467,9 +499,8 @@ io.on("connection", (socket) => {
           },
         }
       );
-
       socket.emit("messagesLoaded", {
-        chatId,
+        chatId: actualChatId.toString(),
         messages: messagesWithSenders.reverse(),
         hasMore: messagesWithSenders.length === limit,
       });

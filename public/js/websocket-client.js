@@ -7,6 +7,7 @@ class ChatWebSocket {
     this.isInChatPage = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.isAuthenticated = false;
   }
   // Helper function to safely format timestamps for notifications
   safeFormatTimestamp(timestamp) {
@@ -61,7 +62,6 @@ class ChatWebSocket {
 
     this.setupEventListeners();
   }
-
   setupEventListeners() {
     // New message received
     this.socket.on("newMessage", (data) => {
@@ -80,10 +80,10 @@ class ChatWebSocket {
     // Typing indicators
     this.socket.on("userTyping", (data) => {
       this.showTypingIndicator(data);
-    });
-
-    // Chat loaded
+    }); // Chat loaded
     this.socket.on("chatsLoaded", (chats) => {
+      // When chats are loaded, it means authentication was successful
+      this.isAuthenticated = true;
       this.loadUserChats(chats);
     });
 
@@ -111,6 +111,15 @@ class ChatWebSocket {
     // Listen for unread notifications when user connects
     this.socket.on("unreadNotifications", (data) => {
       this.handleUnreadNotifications(data);
+    }); // Handle connection events for better authentication tracking
+    this.socket.on("connect", () => {
+      console.log("WebSocket connected successfully");
+      this.isAuthenticated = false; // Reset authentication status
+    });
+
+    this.socket.on("disconnect", (reason) => {
+      console.log("WebSocket disconnected:", reason);
+      this.isAuthenticated = false;
     });
   }
 
@@ -271,11 +280,53 @@ class ChatWebSocket {
       messageType,
     });
   }
-
   loadMessages(chatId) {
-    if (this.socket) {
+    if (this.socket && this.socket.connected) {
+      if (!this.isAuthenticated) {
+        console.log(
+          "WebSocket connected but not authenticated, waiting for authentication"
+        );
+        // Wait for authentication then retry
+        setTimeout(() => {
+          if (this.isAuthenticated) {
+            this.currentChatId = chatId;
+            this.socket.emit("loadMessages", { chatId });
+          } else {
+            console.error("Authentication timeout, trying to reconnect");
+            this.handleAuthenticationFailure(chatId);
+          }
+        }, 2000);
+        return;
+      }
+
       this.currentChatId = chatId;
       this.socket.emit("loadMessages", { chatId });
+    } else {
+      console.error("WebSocket not connected when trying to load messages");
+      this.handleAuthenticationFailure(chatId);
+    }
+  }
+
+  // Handle authentication failures
+  handleAuthenticationFailure(chatId) {
+    if (window.currentUser && !this.socket?.connected) {
+      console.log("Attempting to reconnect WebSocket for message loading");
+      this.connect(window.currentUser);
+      // Wait a bit for connection and authentication then retry
+      setTimeout(() => {
+        if (this.socket && this.socket.connected && this.isAuthenticated) {
+          this.currentChatId = chatId;
+          this.socket.emit("loadMessages", { chatId });
+        } else {
+          console.error("Failed to reconnect and authenticate, showing error");
+          if (typeof window.showNotification === "function") {
+            window.showNotification(
+              "Unable to connect to chat server. Please refresh the page.",
+              "error"
+            );
+          }
+        }
+      }, 3000);
     }
   }
   createChat(chatPayload) {
@@ -821,20 +872,24 @@ class ChatWebSocket {
     if (this.socket) {
       this.socket.emit("getUserChats");
     }
-  }
-  // Add a notification to the header notification dropdown
+  } // Add a notification to the header notification dropdown
   addToHeaderNotifications(message, sender) {
     console.log("addToHeaderNotifications called with:", { message, sender });
 
     // Find the header notification content
     const notificationContent = document.getElementById("notification-content");
-    if (!notificationContent) return;
+    if (!notificationContent) {
+      console.warn("notification-content element not found");
+      return;
+    }
 
     // Remove the "no notifications" message if it exists
     const noNotifications = document.getElementById("no-notifications");
     if (noNotifications) {
       noNotifications.style.display = "none";
-    } // Create a new notification item
+    }
+
+    // Create a new notification item
     const notificationItem = document.createElement("div");
     notificationItem.className = "notification-item";
     notificationItem.dataset.chatId = message.chat_id;
@@ -861,8 +916,12 @@ class ChatWebSocket {
     }
         </div>
       </div>
-    `; // Add click handler to navigate to the chat
+    `;
+
+    // Add click handler to navigate to the chat
     notificationItem.addEventListener("click", () => {
+      console.log("Notification clicked for chat:", message.chat_id);
+
       // Mark this notification as read if it has a notification ID
       if (notificationItem.dataset.notificationId) {
         this.markNotificationsAsRead([notificationItem.dataset.notificationId]);
@@ -878,17 +937,8 @@ class ChatWebSocket {
       }
 
       // Update notification count after removal
-      this.updateNotificationCount();
-
-      // Navigate to the chat
-      if (typeof window.loadChat === "function") {
-        window.loadChat(message.chat_id);
-      } else {
-        // Fallback to navigation if loadChat is not available
-        window.location.href = `${window.urlRoot || ""}/chats/messages?chatId=${
-          message.chat_id
-        }`;
-      }
+      this.updateNotificationCount(); // Navigate to the chat - ensure proper authentication
+      this.navigateToChat(message.chat_id);
     });
 
     // Add to the notification content (at the top)
@@ -962,6 +1012,43 @@ class ChatWebSocket {
       }
     } catch (error) {
       console.error("Error marking notifications as read:", error);
+    }
+  }
+  // Navigate to chat with proper authentication handling
+  navigateToChat(chatId) {
+    console.log(`Navigating to chat ${chatId} with authentication check`);
+
+    // Ensure we have proper authentication
+    if (!this.socket || !this.socket.connected) {
+      console.log(
+        "WebSocket not connected, attempting to reconnect before navigation"
+      );
+      if (window.currentUser) {
+        this.connect(window.currentUser);
+        // Wait for connection then navigate
+        setTimeout(() => {
+          this.performNavigation(chatId);
+        }, 1000);
+      } else {
+        console.error("No user data available for authentication");
+        this.performNavigation(chatId); // Try anyway
+      }
+    } else {
+      this.performNavigation(chatId);
+    }
+  }
+
+  // Perform the actual navigation
+  performNavigation(chatId) {
+    if (typeof window.loadChat === "function") {
+      console.log("Using window.loadChat to navigate to chat");
+      window.loadChat(chatId);
+    } else {
+      // Fallback to navigation if loadChat is not available
+      console.log("Fallback navigation to chat messages page");
+      window.location.href = `${
+        window.urlRoot || ""
+      }/chats/messages?chatId=${chatId}`;
     }
   }
 

@@ -65,10 +65,14 @@ class Chats extends Controller
   public function messages()
   {
     // Sync user to MongoDB when accessing chat
-    $this->syncCurrentUser();
+    $this->syncCurrentUser();    // Get chatId from URL parameter if provided - keep as string for MongoDB ObjectId
+    $chatId = isset($_GET['chatId']) ? trim($_GET['chatId']) : null;
 
-    // Get chatId from URL parameter if provided
-    $chatId = isset($_GET['chatId']) ? (int)$_GET['chatId'] : null;
+    // Validate ObjectId format if chatId is provided
+    if ($chatId && !preg_match('/^[a-f\d]{24}$/i', $chatId)) {
+      // Invalid ObjectId format, set to null to prevent errors
+      $chatId = null;
+    }
 
     // Get current user data for socket connection
     $userData = [
