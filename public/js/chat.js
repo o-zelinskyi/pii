@@ -1271,6 +1271,9 @@ window.loadChat = function (chatId) {
   );
 
   if (chatItem) {
+    // Chat exists in DOM - load it directly
+    console.log(`Chat ${chatId} found in DOM, loading directly`);
+    
     // Remove active class from currently active item
     const chatListContainer = document.getElementById("chatListContainer");
     const currentlyActive =
@@ -1310,7 +1313,52 @@ window.loadChat = function (chatId) {
 
     return true;
   } else {
-    console.error(`Chat with ID ${chatId} not found in the list.`);
-    return false;
+    // Chat not found in DOM - check if we're on the chat page
+    console.log(`Chat ${chatId} not found in DOM, checking page context`);
+    
+    const isOnChatPage = window.location.pathname.includes('/chats') || 
+                        window.location.pathname.includes('/messages');
+    
+    if (isOnChatPage) {
+      // We're on chat page but chat list might not be loaded yet
+      console.log(`On chat page, attempting to load chat list and retry`);
+      
+      // Try to load the chat list first, then retry
+      if (window.chatWS && typeof window.chatWS.refreshUserChats === 'function') {
+        window.chatWS.refreshUserChats();
+        
+        // Wait a moment for the chat list to load, then retry
+        setTimeout(() => {
+          const retryItem = document.querySelector(
+            `.chat-item[data-chat-id="${chatId}"]`
+          );
+          if (retryItem) {
+            console.log(`Chat ${chatId} found after refresh, loading`);
+            window.loadChat(chatId); // Recursive call
+          } else {
+            console.warn(`Chat ${chatId} still not found after refresh`);
+            // Set the current chat ID anyway so it loads when messages arrive
+            if (window.chatWS) {
+              window.chatWS.currentChatId = chatId;
+              window.chatWS.loadMessages(chatId);
+            }
+          }
+        }, 1000);
+      } else {
+        // No refresh function available, just set current chat ID
+        console.log(`No refresh function, setting current chat ID to ${chatId}`);
+        if (window.chatWS) {
+          window.chatWS.currentChatId = chatId;
+          window.chatWS.loadMessages(chatId);
+        }
+      }
+      return true;
+    } else {
+      // Not on chat page - navigate to chat page with the chat ID
+      console.log(`Not on chat page, navigating to chat page with chatId: ${chatId}`);
+      const chatUrl = `${window.urlRoot || ''}/chats/messages?chatId=${chatId}`;
+      window.location.href = chatUrl;
+      return true;
+    }
   }
 };
