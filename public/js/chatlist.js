@@ -203,13 +203,15 @@ class ChatList {
       this.loadUsers(query);
     }, 300);
   }
-
   // Toggle user selection
   toggleUserSelection(userId, selected) {
+    // Ensure userId is a number
+    const normalizedUserId = parseInt(userId);
+
     if (selected) {
-      this.selectedUsers.add(userId);
+      this.selectedUsers.add(normalizedUserId);
     } else {
-      this.selectedUsers.delete(userId);
+      this.selectedUsers.delete(normalizedUserId);
     }
     this.updateCreateChatButton();
   }
@@ -225,43 +227,41 @@ class ChatList {
           : "Start Conversation";
     }
   }
-
   // Create chat with selected users
   async createChat() {
     if (this.selectedUsers.size === 0) return;
-
     try {
-      const selectedUserIds = Array.from(this.selectedUsers);
-      const selectedUserData = selectedUserIds.map((id) => this.users.get(id));
-
-      // Send request to create chat
-      const response = await fetch(
-        `${window.location.origin}/github/chat-server/api/create-chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            participants: selectedUserIds,
-            chatType: selectedUserIds.length > 1 ? "group" : "direct",
-            createdBy: this.getCurrentUserId(),
-          }),
-        }
+      const selectedUserIds = Array.from(this.selectedUsers).map((id) =>
+        parseInt(id)
       );
 
-      const result = await response.json();
+      // Get current user ID to avoid including in participants
+      const currentUserId = parseInt(this.getCurrentUserId());
 
-      if (result.success) {
+      // Filter out current user from selected users to prevent duplication
+      const participantsOnly = selectedUserIds.filter(
+        (id) => id !== currentUserId
+      );
+
+      console.log("Selected users:", selectedUserIds);
+      console.log("Current user ID:", currentUserId);
+      console.log("Participants (without creator):", participantsOnly);
+
+      // Use WebSocket to create chat instead of fetch
+      if (window.chatWS && typeof window.chatWS.createChat === "function") {
+        const chatData = {
+          participants: participantsOnly, // Only other users, creator will be added by server
+          name: participantsOnly.length > 0 ? null : null, // Let server generate name
+          is_group: participantsOnly.length > 0, // Will be 1-on-1 if only 1 other person
+        };
+
+        console.log("Creating chat with data:", chatData);
+        window.chatWS.createChat(chatData);
+
         // Close modal
         this.closeCreateChatModal();
-
-        // Redirect to new chat or refresh chat list
-        if (result.chatId) {
-          window.location.href = `${window.location.origin}/github/chats/view/${result.chatId}`;
-        }
       } else {
-        throw new Error(result.message || "Failed to create chat");
+        throw new Error("WebSocket not available");
       }
     } catch (error) {
       console.error("Error creating chat:", error);

@@ -131,7 +131,6 @@ const chatSchema = new mongoose.Schema(
     participants: [
       {
         user_id: { type: Number, required: true },
-        role: { type: String, enum: ["admin", "member"], default: "member" },
         joinedAt: { type: Date, default: Date.now },
         leftAt: { type: Date, default: null },
       },
@@ -154,7 +153,8 @@ const Chat = mongoose.model("Chat", chatSchema); // Create Chat model
 const UserStatus = mongoose.model("UserStatus", userStatusSchema);
 
 // Store active socket connections and online users
-const activeUsers = new Map();
+const activeUsers = new Map(); // socketId -> userData
+const userSessions = new Map(); // user_id -> Set of socketIds
 const onlineUsers = new Set(); // Simple array to track online user IDs
 
 // Socket.IO connection handling
@@ -177,9 +177,7 @@ io.on("connection", (socket) => {
           socketId: socket.id,
         },
         { upsert: true, new: true }
-      );
-
-      // Add to active users and online array
+      ); // Add to active users and online array
       activeUsers.set(socket.id, {
         user_id,
         email,
@@ -188,6 +186,13 @@ io.on("connection", (socket) => {
         socketId: socket.id,
       });
 
+      // Track multiple sessions per user
+      if (!userSessions.has(user_id)) {
+        userSessions.set(user_id, new Set());
+      }
+      userSessions.get(user_id).add(socket.id);
+
+      // Add to online users (Set prevents duplicates)
       onlineUsers.add(user_id);
 
       // Join user to their chat rooms
@@ -198,10 +203,11 @@ io.on("connection", (socket) => {
 
       userChats.forEach((chat) => {
         socket.join(chat._id.toString());
-      });
-
-      // Notify user is online to all their chats
+      }); // Notify user is online to all their chats
       userChats.forEach((chat) => {
+        console.log(
+          `Notifying chat ${chat._id} that user ${user_id} (${firstname} ${lastname}) is online`
+        );
         socket.to(chat._id.toString()).emit("userOnline", {
           user_id,
           firstname,
@@ -459,7 +465,6 @@ io.on("connection", (socket) => {
       socket.emit("error", { message: "Failed to send message" });
     }
   });
-
   // Create new chat
   socket.on("createChat", async (data) => {
     try {
@@ -469,15 +474,48 @@ io.on("connection", (socket) => {
       if (!user) {
         socket.emit("error", { message: "User not authenticated" });
         return;
-      } // Add creator to participants if not included
-      const allParticipants = participants.includes(user.user_id)
-        ? participants
-        : [...participants, user.user_id];
+      } // Ensure all participants are numbers to prevent type mismatch
+      const normalizedParticipants = participants.map((p) => parseInt(p));
+      const creatorId = parseInt(user.user_id);
 
-      // Determine if it's a group chat - override client setting for proper logic
+      // Create a Set to prevent duplicates, then convert back to array
+      const participantSet = new Set(normalizedParticipants);
+
+      // Always add creator (Set will prevent duplicates)
+      participantSet.add(creatorId);
+
+      const allParticipants = Array.from(participantSet);
+
+      console.log("Original participants:", participants);
+      console.log("Normalized participants:", normalizedParticipants);
+      console.log("Creator user_id:", user.user_id, "normalized:", creatorId);
+      console.log("Final participants (no duplicates):", allParticipants);
+
+      // Determine if it's a group chat based on actual participant count
       const actualIsGroup = allParticipants.length > 2;
 
-      // Create chat
+      // For 1-on-1 chats, check if a chat already exists between these users
+      if (!actualIsGroup) {
+        const existingChat = await Chat.findOne({
+          isGroup: false,
+          "participants.user_id": { $all: allParticipants },
+          $expr: { $eq: [{ $size: "$participants" }, allParticipants.length] },
+        });
+
+        if (existingChat) {
+          console.log(
+            "1-on-1 chat already exists between these users:",
+            allParticipants
+          );
+          socket.emit("error", {
+            message: "Chat already exists between these users",
+            existingChatId: existingChat._id,
+          });
+          return;
+        }
+      }
+
+      // Create chat without role system - just participants
       const chat = new Chat({
         name: actualIsGroup
           ? name || `Group Chat ${Date.now()}`
@@ -485,7 +523,7 @@ io.on("connection", (socket) => {
         isGroup: actualIsGroup,
         participants: allParticipants.map((userId) => ({
           user_id: userId,
-          role: userId === user.user_id ? "admin" : "member",
+          joinedAt: new Date(),
         })),
       });
       await chat.save(); // Populate participant details for the response
@@ -560,8 +598,7 @@ io.on("connection", (socket) => {
       console.error("Error creating chat:", error);
       socket.emit("error", { message: "Failed to create chat" });
     }
-  });
-  // Update chat name
+  }); // Update chat name
   socket.on("updateChatName", async (data) => {
     try {
       const { chatId, newName } = data;
@@ -576,57 +613,29 @@ io.on("connection", (socket) => {
         `updateChatName: User ${user.user_id} attempting to update chat ${chatId} to "${newName}"`
       );
 
-      // First, find the chat to see what we're working with
-      const chatForDebug = await Chat.findById(chatId);
-      if (chatForDebug) {
-        console.log(
-          `updateChatName: Chat found - isGroup: ${chatForDebug.isGroup}, participants:`,
-          chatForDebug.participants
-        );
-      } else {
-        console.log(`updateChatName: Chat ${chatId} not found`);
-        socket.emit("error", { message: "Chat not found" });
-        return;
-      }
-
-      // Find the chat and verify user is an admin participant
+      // Find the chat and verify user is a participant
       const chat = await Chat.findOne({
         _id: chatId,
         isGroup: true, // Only group chats can have their names edited
         participants: {
           $elemMatch: {
             user_id: user.user_id,
-            role: "admin", // User must be an admin
             leftAt: null, // User must still be in the chat
           },
         },
       });
 
       if (!chat) {
-        // More specific error message
-        if (!chatForDebug.isGroup) {
+        const chatForDebug = await Chat.findById(chatId);
+        if (chatForDebug && !chatForDebug.isGroup) {
           socket.emit("error", {
             message:
               "Cannot rename 1-on-1 chats. Only group chats can be renamed.",
           });
         } else {
-          const userParticipant = chatForDebug.participants.find(
-            (p) => p.user_id === user.user_id && !p.leftAt
-          );
-          if (!userParticipant) {
-            socket.emit("error", {
-              message: "You are not a participant in this chat.",
-            });
-          } else if (userParticipant.role !== "admin") {
-            socket.emit("error", {
-              message: "Only chat admins can rename group chats.",
-            });
-          } else {
-            socket.emit("error", {
-              message:
-                "Chat not found, not a group chat, or user is not an admin.",
-            });
-          }
+          socket.emit("error", {
+            message: "Chat not found or you are not a participant.",
+          });
         }
         return;
       }
@@ -646,7 +655,6 @@ io.on("connection", (socket) => {
       socket.emit("error", { message: "Failed to update chat name" });
     }
   });
-
   // Add user to chat
   socket.on("addUserToChat", async (data) => {
     try {
@@ -658,20 +666,32 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // Check if user is admin of the chat
+      // Check if user is participant of the chat and chat is a group
       const chat = await Chat.findOne({
         _id: chatId,
+        isGroup: true, // Only allow adding users to group chats
         participants: {
           $elemMatch: {
             user_id: user.user_id,
-            role: "admin",
             leftAt: null,
           },
         },
       });
 
       if (!chat) {
-        socket.emit("error", { message: "Only chat admins can add users" });
+        socket.emit("error", {
+          message: "Only group chat participants can add users",
+        });
+        return;
+      }
+
+      // Check if user is already in the chat
+      const existingParticipant = chat.participants.find(
+        (p) => p.user_id === userId && !p.leftAt
+      );
+
+      if (existingParticipant) {
+        socket.emit("error", { message: "User is already in this chat" });
         return;
       }
 
@@ -680,7 +700,6 @@ io.on("connection", (socket) => {
         $push: {
           participants: {
             user_id: userId,
-            role: "member",
             joinedAt: new Date(),
           },
         },
@@ -865,42 +884,64 @@ io.on("connection", (socket) => {
       console.error("Error handling reaction:", error);
       socket.emit("error", { message: "Failed to update reaction" });
     }
-  }); // User disconnection
+  });
+
+  // User disconnection
   socket.on("disconnect", async () => {
     try {
       const user = activeUsers.get(socket.id);
 
       if (user) {
-        // Update user's last seen in MongoDB and remove from online array
-        await User.findOneAndUpdate(
-          { user_id: user.user_id },
-          {
-            lastSeen: new Date(),
-            socketId: null,
+        // Remove this socket from user's sessions
+        if (userSessions.has(user.user_id)) {
+          userSessions.get(user.user_id).delete(socket.id);
+
+          // Only mark user as offline if they have no more active sessions
+          if (userSessions.get(user.user_id).size === 0) {
+            // Remove from online users array
+            onlineUsers.delete(user.user_id);
+            userSessions.delete(user.user_id);
+
+            // Update user's last seen in MongoDB
+            await User.findOneAndUpdate(
+              { user_id: user.user_id },
+              {
+                lastSeen: new Date(),
+                socketId: null,
+              }
+            );
+
+            // Notify user is offline to all their chats
+            const userChats = await Chat.find({
+              "participants.user_id": user.user_id,
+              "participants.leftAt": null,
+            });
+
+            userChats.forEach((chat) => {
+              socket.to(chat._id.toString()).emit("userOffline", {
+                user_id: user.user_id,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                lastSeen: new Date(),
+                isOnline: false,
+              });
+            });
+
+            console.log(
+              `User ${user.firstname} ${user.lastname} went offline (all sessions disconnected)`
+            );
+          } else {
+            console.log(
+              `User ${user.firstname} ${
+                user.lastname
+              } disconnected from one session, but still has ${
+                userSessions.get(user.user_id).size
+              } active session(s)`
+            );
           }
-        );
-
-        // Remove from online users array
-        onlineUsers.delete(user.user_id);
-
-        // Notify user is offline to all their chats
-        const userChats = await Chat.find({
-          "participants.user_id": user.user_id,
-          "participants.leftAt": null,
-        });
-
-        userChats.forEach((chat) => {
-          socket.to(chat._id.toString()).emit("userOffline", {
-            user_id: user.user_id,
-            firstname: user.firstname,
-            lastname: user.lastname,
-            lastSeen: new Date(),
-            isOnline: false,
-          });
-        });
+        }
 
         activeUsers.delete(socket.id);
-        console.log(`User ${user.firstname} ${user.lastname} disconnected`);
       }
     } catch (error) {
       console.error("Error during disconnect:", error);
@@ -923,6 +964,13 @@ app.get("/api/online-users", (req, res) => {
     success: true,
     onlineUsers: Array.from(onlineUsers),
     onlineCount: onlineUsers.size,
+    userSessions: Object.fromEntries(
+      Array.from(userSessions.entries()).map(([userId, socketIds]) => [
+        userId,
+        Array.from(socketIds),
+      ])
+    ),
+    activeSessionsCount: activeUsers.size,
     timestamp: new Date().toISOString(),
   });
 });

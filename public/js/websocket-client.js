@@ -35,10 +35,12 @@ class ChatWebSocket {
       this.handleNewMessage(data);
     }); // User online/offline status with enhanced details
     this.socket.on("userOnline", (user) => {
+      console.log("WS: User came online:", user);
       this.updateUserStatus(user.user_id, true, user);
     });
 
     this.socket.on("userOffline", (user) => {
+      console.log("WS: User went offline:", user);
       this.updateUserStatus(user.user_id, false, user);
     });
 
@@ -206,23 +208,34 @@ class ChatWebSocket {
       this.socket.emit("loadMessages", { chatId });
     }
   }
-
   createChat(chatPayload) {
     if (this.socket && chatPayload) {
+      // Ensure we don't include creator in participants list
+      let participants = (chatPayload.participants || []).map((id) =>
+        parseInt(id)
+      );
+      const currentUserId = window.currentUser
+        ? parseInt(window.currentUser.user_id)
+        : null;
+
+      // Remove creator from participants to prevent duplication (double check)
+      if (currentUserId) {
+        participants = participants.filter((id) => id !== currentUserId);
+      }
+
+      // Additional check: remove any duplicates in the participants list
+      participants = [...new Set(participants)];
+
       const payloadToSend = {
         name: chatPayload.name,
-        participants: chatPayload.participants, // Ensure this is the array of participant IDs
-        isGroup: chatPayload.is_group, // Map is_group (from client) to isGroup (for server)
-        createdBy: window.currentUser ? window.currentUser.user_id : null, // Add createdBy
+        participants: participants,
+        isGroup: chatPayload.is_group,
       };
 
       // Basic validation for participants
-      if (
-        !payloadToSend.participants ||
-        !Array.isArray(payloadToSend.participants)
-      ) {
+      if (!Array.isArray(payloadToSend.participants)) {
         console.error(
-          "WebSocket: createChat - participants array is missing or not an array in chatPayload:",
+          "WebSocket: createChat - participants must be an array:",
           chatPayload
         );
         if (typeof showNotification === "function") {
@@ -230,20 +243,10 @@ class ChatWebSocket {
         }
         return;
       }
-      if (payloadToSend.createdBy === null) {
-        console.error(
-          "WebSocket: createChat - createdBy (currentUser.user_id) is null."
-        );
-        if (typeof showNotification === "function") {
-          showNotification(
-            "Error: Current user not identified for creating chat.",
-            "error"
-          );
-        }
-        // It might be appropriate to return here if createdBy is essential on the server
-        // return;
-      }
 
+      console.log("WebSocket: Creating chat with payload:", payloadToSend);
+      console.log("Participants count:", payloadToSend.participants.length);
+      console.log("Current user ID:", currentUserId);
       this.socket.emit("createChat", payloadToSend);
     } else {
       console.error(
@@ -252,10 +255,20 @@ class ChatWebSocket {
     }
   }
   updateUserStatus(userId, isOnline, userDetails = null) {
+    console.log(
+      `Updating status for user ${userId}: ${isOnline ? "online" : "offline"}`,
+      userDetails
+    );
+
     // Update user status in the UI
     const userElements = document.querySelectorAll(
       `[data-user-id="${userId}"]`
     );
+
+    console.log(
+      `Found ${userElements.length} elements with data-user-id="${userId}"`
+    );
+
     userElements.forEach((element) => {
       if (isOnline) {
         element.classList.add("online");
@@ -268,7 +281,16 @@ class ChatWebSocket {
 
     // Update chat header status if this is the current chat participant
     if (userDetails && this.currentChatId) {
+      console.log(
+        `Updating chat header status for current chat: ${this.currentChatId}`
+      );
       this.updateChatHeaderStatus(userId, isOnline, userDetails);
+    } else {
+      console.log(
+        `Not updating chat header - userDetails: ${!!userDetails}, currentChatId: ${
+          this.currentChatId
+        }`
+      );
     }
   }
   displayMessages(messages, chatId) {
@@ -524,7 +546,6 @@ class ChatWebSocket {
       }
     }
   }
-
   updateChatHeaderStatus(userId, isOnline, userDetails) {
     // Only update if we're in a 1-on-1 chat with this user
     const headerStatus = document.querySelector(".chat-details .status");
@@ -538,19 +559,39 @@ class ChatWebSocket {
     if (isGroupChat) return; // Don't update status for group chats
 
     // Check if this user is the other participant in the current 1-on-1 chat
-    // This requires checking the chat participants, but for now we'll check if the chat name matches
+    // For 1-on-1 chats, check if the chat name contains the user's full name
     const chatName = activeChatItem.querySelector(".chat-name")?.textContent;
     const userFullName = `${userDetails.firstname} ${userDetails.lastname}`;
 
-    if (chatName && chatName.includes(userDetails.firstname)) {
+    console.log(`Checking status update for user ${userId}:`, {
+      chatName,
+      userFullName,
+      firstname: userDetails.firstname,
+      lastname: userDetails.lastname,
+      isOnline,
+    });
+
+    // Check if the chat name contains either the full name or parts of it
+    if (
+      chatName &&
+      (chatName.includes(userFullName) ||
+        (chatName.includes(userDetails.firstname) &&
+          chatName.includes(userDetails.lastname)))
+    ) {
       if (isOnline) {
         headerStatus.textContent = "Online";
         headerStatus.style.color = "#28a745"; // Green color for online
+        console.log(`Updated header status to Online for user ${userId}`);
       } else {
         const lastSeenTime = this.formatLastSeenTime(userDetails.lastSeen);
         headerStatus.textContent = `Last seen ${lastSeenTime}`;
         headerStatus.style.color = "#6c757d"; // Gray color for offline
+        console.log(`Updated header status to offline for user ${userId}`);
       }
+    } else {
+      console.log(
+        `Chat name "${chatName}" does not match user "${userFullName}"`
+      );
     }
   }
 
