@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/style.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/table.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/navigation.css" />
+  <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/notification.css" />
+  <?php require APPROOT . '/views/inc/global-websocket.php'; ?>
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/header.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/main.css" />
   <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/modal.css" />

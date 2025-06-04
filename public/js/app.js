@@ -1,11 +1,13 @@
 import { Student } from "./models.js";
-import { setupNotifications } from "./notifications.js";
 import { setupNavigationAndMenus } from "./navigation.js";
 import { setupStudentTable } from "./studentTable.js";
 import { setupModalWindows } from "./modals.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  setupNotifications();
+  // Use globally available setupNotifications function
+  if (window.setupNotifications) {
+    setupNotifications();
+  }
 
   setupNavigationAndMenus();
 

@@ -153,12 +153,17 @@ class ChatWebSocket {
         console.warn(
           "loadChat function not available, falling back to navigation"
         );
-        window.location.href = `/github/chats/messages?chatId=${message.chat_id}`;
+        window.location.href = `${window.urlRoot || ""}/chats/messages?chatId=${
+          message.chat_id
+        }`;
       }
     });
 
-    // Add to notification window
+    // Add to notification window (popup)
     this.addToNotificationWindow(notification);
+
+    // Also add to the header notification dropdown
+    this.addToHeaderNotifications(message, sender);
   }
 
   // Notification method for WebSocket events
@@ -777,6 +782,92 @@ class ChatWebSocket {
   refreshUserChats() {
     if (this.socket) {
       this.socket.emit("getUserChats");
+    }
+  }
+
+  // Add a notification to the header notification dropdown
+  addToHeaderNotifications(message, sender) {
+    // Find the header notification content
+    const notificationContent = document.getElementById("notification-content");
+    if (!notificationContent) return;
+
+    // Remove the "no notifications" message if it exists
+    const noNotifications = document.getElementById("no-notifications");
+    if (noNotifications) {
+      noNotifications.style.display = "none";
+    }
+
+    // Create a new notification item
+    const notificationItem = document.createElement("div");
+    notificationItem.className = "notification-item";
+    notificationItem.dataset.chatId = message.chat_id;
+
+    // Format timestamp
+    const timestamp = new Date(message.timestamp);
+    const formattedTime = timestamp.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    notificationItem.innerHTML = `
+      <div class="notification-item-content">
+        <div class="notification-item-header">
+          <strong>${sender.firstname} ${sender.lastname}</strong>
+          <span class="notification-time">${formattedTime}</span>
+        </div>
+        <div class="notification-message-preview">
+          ${message.content.substring(0, 50)}${
+      message.content.length > 50 ? "..." : ""
+    }
+        </div>
+      </div>
+    `;
+
+    // Add click handler to navigate to the chat
+    notificationItem.addEventListener("click", () => {
+      // Hide the notification dropdown
+      const notificationWindow = document.querySelector(".notification-window");
+      if (notificationWindow) {
+        notificationWindow.style.display = "none";
+      }
+
+      // Navigate to the chat
+      if (typeof window.loadChat === "function") {
+        window.loadChat(message.chat_id);
+      } else {
+        // Fallback to navigation if loadChat is not available
+        window.location.href = `${window.urlRoot || ""}/chats/messages?chatId=${
+          message.chat_id
+        }`;
+      }
+    });
+
+    // Add to the notification content (at the top)
+    notificationContent.insertBefore(
+      notificationItem,
+      notificationContent.firstChild
+    );
+
+    // Update notification count
+    this.updateNotificationCount();
+  }
+
+  // Update the notification count badge
+  updateNotificationCount() {
+    const notificationCount = document.querySelector(".notification-count");
+    if (!notificationCount) return;
+
+    const notificationContent = document.getElementById("notification-content");
+    if (!notificationContent) return;
+
+    const count =
+      notificationContent.querySelectorAll(".notification-item").length;
+
+    if (count > 0) {
+      notificationCount.textContent = count;
+      notificationCount.style.display = "block";
+    } else {
+      notificationCount.style.display = "none";
     }
   }
 }

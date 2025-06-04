@@ -2,35 +2,20 @@
 $sitename = 'Messages';
 require APPROOT . '/views/inc/head.php'; ?>
 <link rel="stylesheet" href="<?php echo URLROOT; ?>/css/chatlist.css" />
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script src="<?php echo URLROOT; ?>/js/notification-system.js"></script>
-<script src="<?php echo URLROOT; ?>/js/websocket-client.js"></script>
 <script src="<?php echo URLROOT; ?>/js/add-users.js"></script>
 <script src="<?php echo URLROOT; ?>/js/chat.js"></script>
 <script>
-  // Pass PHP data to JavaScript
-  window.currentUser = <?php echo json_encode($data['currentUser']); ?>;
+  // Additional chat-specific data
   window.students = <?php echo json_encode($data['students']); ?>;
-  window.socketUrl = "<?php echo $data['socketUrl']; ?>";
-  window.urlRoot = "<?php echo URLROOT; ?>";
   window.initialChatId = <?php echo isset($data['initialChatId']) ? json_encode($data['initialChatId']) : 'null'; ?>;
 
-  // Initialize WebSocket connection when page loads
+  // Initialize chat-specific functionality when page loads
   document.addEventListener('DOMContentLoaded', function() {
     // Add a small delay to ensure the module is loaded
     setTimeout(() => {
-      if (typeof initializeChatWebSocket === 'function' && window.currentUser && window.socketUrl) {
-        initializeChatWebSocket(window.currentUser, window.socketUrl);
-
-        // If there's an initial chat ID, load that chat
-        if (window.initialChatId && typeof loadChat === 'function') {
-          loadChat(window.initialChatId);
-        }
-      } else {
-        console.error('initializeChatWebSocket function not available or missing data');
-        console.log('Available functions:', typeof initializeChatWebSocket);
-        console.log('Current user:', window.currentUser);
-        console.log('Socket URL:', window.socketUrl);
+      // If there's an initial chat ID, load that chat
+      if (window.initialChatId && typeof loadChat === 'function') {
+        loadChat(window.initialChatId);
       }
     }, 100);
   });

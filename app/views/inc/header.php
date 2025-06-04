@@ -3,7 +3,7 @@
         <h1 class="company-name">CMS</h1>
       </a>
       <div class="right-section"> <?php if (isset($_SESSION['user_id'])) : ?>
-          <div class="notification-section notification-bell">
+          <div class="notification-section notification-bell" id="notification-bell">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="28px"
@@ -21,7 +21,7 @@
                 <button class="mark-all-read" onclick="markAllAsRead()">Mark all as read</button>
               </div>
               <div class="notification-content" id="notification-content">
-                <div class="no-notifications">
+                <div class="no-notifications" id="no-notifications">
                   <p>No new messages</p>
                 </div>
               </div>

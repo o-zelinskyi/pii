@@ -1,78 +1,109 @@
 function setupNotifications() {
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-      let notificationElement = document.querySelector(".notification");
-      if (notificationElement) {
-        notificationElement.classList.add("animate");
-        setTimeout(() => {
-          notificationElement.classList.remove("hidden");
-        }, 3000);
+  document.addEventListener("DOMContentLoaded", function () {
+    // Set up notification bell icon
+    const notificationBell = document.querySelector(".notification-bell");
+    const notificationWindow = document.querySelector(".notification-window");
+
+    if (notificationBell && notificationWindow) {
+      const isTouchDevice = () => {
+        return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      };
+
+      if (isTouchDevice()) {
+        // Touch device behavior
+        notificationBell.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (
+            notificationWindow.style.display === "block" ||
+            notificationWindow.style.display === "flex"
+          ) {
+            notificationWindow.style.display = "none";
+          } else {
+            notificationWindow.style.display = "block";
+          }
+        });
+
+        document.addEventListener("click", (event) => {
+          if (
+            !notificationBell.contains(event.target) &&
+            !notificationWindow.contains(event.target)
+          ) {
+            notificationWindow.style.display = "none";
+          }
+        });
+
+        notificationWindow.addEventListener("click", (event) => {
+          event.stopPropagation();
+        });
+      } else {
+        // Mouse device behavior
+        notificationBell.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (
+            notificationWindow.style.display === "block" ||
+            notificationWindow.style.display === "flex"
+          ) {
+            notificationWindow.style.display = "none";
+          } else {
+            notificationWindow.style.display = "block";
+          }
+        });
+
+        document.addEventListener("click", (event) => {
+          if (
+            !notificationBell.contains(event.target) &&
+            !notificationWindow.contains(event.target)
+          ) {
+            notificationWindow.style.display = "none";
+          }
+        });
       }
     }
+
+    // Set up mark all as read functionality
+    const markAllReadButton = document.querySelector(".mark-all-read");
+    if (markAllReadButton) {
+      markAllReadButton.addEventListener("click", markAllAsRead);
+    }
   });
+}
 
-  const notification = document.querySelector(".notification-section");
-  const notificationWindow = document.querySelector(".notification-window");
+// Mark all notifications as read
+function markAllAsRead() {
+  // Clear all notifications
+  const notificationContent = document.getElementById("notification-content");
+  if (notificationContent) {
+    // Remove all notification items
+    const notificationItems =
+      notificationContent.querySelectorAll(".notification-item");
+    notificationItems.forEach((item) => item.remove());
 
-  if (notification && notificationWindow) {
-    const isTouchDevice = () => {
-      return "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    };
+    // Show no notifications message
+    let noNotificationsMsg = document.getElementById("no-notifications");
+    if (!noNotificationsMsg) {
+      noNotificationsMsg = document.createElement("div");
+      noNotificationsMsg.id = "no-notifications";
+      noNotificationsMsg.className = "no-notifications";
+      noNotificationsMsg.innerHTML = "<p>No new messages</p>";
+      notificationContent.appendChild(noNotificationsMsg);
+    }
+    noNotificationsMsg.style.display = "block";
 
-    if (isTouchDevice()) {
-      notification.addEventListener("click", (event) => {
-        event.stopPropagation();
-        notificationWindow.style.display =
-          notificationWindow.style.display === "flex" ? "none" : "flex";
-
-        document.querySelector(".notification")?.classList.add("hidden");
-      });
-
-      document.addEventListener("click", (event) => {
-        if (
-          !notification.contains(event.target) &&
-          !notificationWindow.contains(event.target)
-        ) {
-          notificationWindow.style.display = "none";
-        }
-      });
-
-      notificationWindow.addEventListener("click", (event) => {
-        event.stopPropagation();
-      });
+    // Update notification count
+    if (
+      window.chatWS &&
+      typeof window.chatWS.updateNotificationCount === "function"
+    ) {
+      window.chatWS.updateNotificationCount();
     } else {
-      notification.addEventListener("mouseenter", () => {
-        notificationWindow.style.display = "flex";
-        document.querySelector(".notification")?.classList.add("hidden");
-      });
-
-      notificationWindow.addEventListener("mouseenter", () => {
-        notificationWindow.style.display = "flex";
-      });
-
-      notification.addEventListener("mouseleave", (event) => {
-        if (
-          !event.relatedTarget ||
-          !notificationWindow.contains(event.relatedTarget)
-        ) {
-          setTimeout(() => {
-            if (!notificationWindow.matches(":hover")) {
-              notificationWindow.style.display = "none";
-            }
-          }, 50);
-        }
-      });
-
-      notificationWindow.addEventListener("mouseleave", (event) => {
-        if (
-          !event.relatedTarget ||
-          !notification.contains(event.relatedTarget)
-        ) {
-          notificationWindow.style.display = "none";
-        }
-      });
+      const notificationCount = document.querySelector(".notification-count");
+      if (notificationCount) {
+        notificationCount.style.display = "none";
+      }
     }
   }
 }
 
-export { setupNotifications };
+// Expose functions to global scope for use in inline scripts
+window.setupNotifications = setupNotifications;
+window.markAllAsRead = markAllAsRead;
