@@ -87,6 +87,39 @@ const userStatusSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Notification schema for persistent notifications
+const notificationSchema = new mongoose.Schema(
+  {
+    recipient_id: { type: Number, required: true }, // Who should receive this notification
+    sender_id: { type: Number, required: true }, // Who sent the message that triggered notification
+    chat_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chat",
+      required: true,
+    },
+    message_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["message", "chat_created", "user_added", "chat_renamed"],
+      default: "message",
+    },
+    content: { type: String, required: true }, // Preview of the message or notification text
+    isRead: { type: Boolean, default: false },
+    readAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null }, // When notification was delivered to user
+  },
+  { timestamps: true }
+);
+
+// Add indexes for better performance
+notificationSchema.index({ recipient_id: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ chat_id: 1 });
+notificationSchema.index({ message_id: 1 });
+
 const messageSchema = new mongoose.Schema(
   {
     chat_id: {
@@ -151,6 +184,7 @@ const User = mongoose.model("User", userSchema); // Create User model
 const Message = mongoose.model("Message", messageSchema);
 const Chat = mongoose.model("Chat", chatSchema); // Create Chat model
 const UserStatus = mongoose.model("UserStatus", userStatusSchema);
+const Notification = mongoose.model("Notification", notificationSchema); // Create Notification model for persistent notifications
 
 // Store active socket connections and online users
 const activeUsers = new Map(); // socketId -> userData
@@ -283,8 +317,59 @@ io.on("connection", (socket) => {
           };
         })
       );
-
       socket.emit("chatsLoaded", chatsWithDetails);
+
+      // Send unread notifications to user when they connect
+      try {
+        const unreadNotifications = await Notification.find({
+          recipient_id: user_id,
+          isRead: false,
+        })
+          .populate({
+            path: "message_id",
+            select: "content createdAt messageType",
+          })
+          .populate({
+            path: "chat_id",
+            select: "name isGroup",
+          })
+          .sort({ createdAt: -1 })
+          .limit(20); // Send only recent 20 notifications
+
+        if (unreadNotifications.length > 0) {
+          // Get sender information for each notification
+          const notificationsWithSenders = await Promise.all(
+            unreadNotifications.map(async (notification) => {
+              const sender = await User.findOne({
+                user_id: notification.sender_id,
+              });
+              return {
+                ...notification.toObject(),
+                sender: {
+                  user_id: notification.sender_id,
+                  firstname: sender?.firstname || "Unknown",
+                  lastname: sender?.lastname || "User",
+                },
+              };
+            })
+          );
+
+          // Send notifications to the user
+          socket.emit("unreadNotifications", {
+            notifications: notificationsWithSenders,
+            count: notificationsWithSenders.length,
+          });
+
+          console.log(
+            `Sent ${notificationsWithSenders.length} unread notifications to user ${user_id}`
+          );
+        }
+      } catch (notificationError) {
+        console.error(
+          "Error fetching unread notifications:",
+          notificationError
+        );
+      }
 
       console.log(
         `User ${firstname} ${lastname} joined with socket ${socket.id}`
@@ -447,19 +532,42 @@ io.on("connection", (socket) => {
           firstname: user.firstname,
           lastname: user.lastname,
         },
-      });
+      }); // Create persistent notifications for offline users
+      const offlineParticipants = chat.participants.filter(
+        (p) => p.user_id !== user.user_id && !onlineUsers.has(p.user_id)
+      );
 
-      // Send push notification to offline users
-      const offlineParticipants = await User.find({
-        user_id: { $in: chat.participants.map((p) => p.user_id) },
-        isOnline: false,
-      });
+      // Create notifications for offline users
+      const notificationPromises = offlineParticipants.map(
+        async (participant) => {
+          try {
+            const notification = new Notification({
+              recipient_id: participant.user_id,
+              sender_id: user.user_id,
+              chat_id: chatId,
+              message_id: message._id,
+              type: "message",
+              content:
+                content.length > 100
+                  ? content.substring(0, 97) + "..."
+                  : content,
+            });
 
-      // Notify offline users (for bell notification system)
-      offlineParticipants.forEach((offlineUser) => {
-        // This would integrate with your notification system
-        console.log(`Notification for offline user: ${offlineUser.user_id}`);
-      });
+            await notification.save();
+            console.log(
+              `Created notification for offline user: ${participant.user_id}`
+            );
+          } catch (notificationError) {
+            console.error(
+              `Failed to create notification for user ${participant.user_id}:`,
+              notificationError
+            );
+          }
+        }
+      );
+
+      // Wait for all notifications to be created
+      await Promise.all(notificationPromises);
     } catch (error) {
       console.error("Error sending message:", error);
       socket.emit("error", { message: "Failed to send message" });
@@ -1170,7 +1278,6 @@ app.get("/api/user-status/:userId", async (req, res) => {
       }
       userData.lastSeen = user.lastSeen;
     }
-
     res.json({
       success: true,
       data: userData,
@@ -1180,6 +1287,134 @@ app.get("/api/user-status/:userId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// Get unread notifications for a user
+app.get("/api/notifications/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
+    // Get unread notifications for the user
+    const notifications = await Notification.find({
+      recipient_id: userId,
+      isRead: false,
+    })
+      .populate({
+        path: "message_id",
+        select: "content createdAt messageType",
+      })
+      .populate({
+        path: "chat_id",
+        select: "name isGroup",
+      })
+      .sort({ createdAt: -1 })
+      .limit(50); // Limit to 50 most recent notifications
+
+    // Get sender information for each notification
+    const notificationsWithSenders = await Promise.all(
+      notifications.map(async (notification) => {
+        const sender = await User.findOne({ user_id: notification.sender_id });
+        return {
+          ...notification.toObject(),
+          sender: {
+            user_id: notification.sender_id,
+            firstname: sender?.firstname || "Unknown",
+            lastname: sender?.lastname || "User",
+          },
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      notifications: notificationsWithSenders,
+      count: notificationsWithSenders.length,
+    });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch notifications",
+      error: error.message,
+    });
+  }
+});
+
+// Mark notifications as read
+app.post("/api/notifications/:userId/mark-read", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const { notificationIds, markAll = false } = req.body;
+
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
+    let updateQuery = { recipient_id: userId, isRead: false };
+
+    if (!markAll && notificationIds && Array.isArray(notificationIds)) {
+      updateQuery._id = { $in: notificationIds };
+    }
+
+    const result = await Notification.updateMany(updateQuery, {
+      $set: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Marked ${result.modifiedCount} notifications as read`,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark notifications as read",
+      error: error.message,
+    });
+  }
+});
+
+// Get notification count for a user
+app.get("/api/notifications/:userId/count", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
+    const count = await Notification.countDocuments({
+      recipient_id: userId,
+      isRead: false,
+    });
+
+    res.json({
+      success: true,
+      unreadCount: count,
+    });
+  } catch (error) {
+    console.error("Error fetching notification count:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch notification count",
       error: error.message,
     });
   }

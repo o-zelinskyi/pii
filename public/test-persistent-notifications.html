@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Persistent Notifications</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-section {
+        background: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .test-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .test-button:hover {
+        background-color: #0056b3;
+      }
+      .test-button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+      .success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+      .notification-demo {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 300px;
+        display: none;
+      }
+      .notification-demo.show {
+        display: block;
+      }
+      .notification-count {
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔔 Test Persistent Notifications System</h1>
+    <p>
+      This page tests the offline notification functionality. Use it to verify
+      that users receive notifications for messages sent while they were
+      offline.
+    </p>
+
+    <div class="test-section">
+      <h2>📊 Server Status</h2>
+      <button class="test-button" onclick="checkServerStatus()">
+        Check Chat Server Status
+      </button>
+      <div id="server-status-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>👤 User Simulation</h2>
+      <label for="user-id">Test User ID:</label>
+      <input type="number" id="user-id" value="1" min="1" />
+      <button class="test-button" onclick="testGetNotifications()">
+        Get User Notifications
+      </button>
+      <button class="test-button" onclick="testGetNotificationCount()">
+        Get Notification Count
+      </button>
+      <div id="user-notifications-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>💬 Create Test Notification</h2>
+      <p>Simulate an offline user receiving a message:</p>
+      <label for="recipient-id">Recipient User ID:</label>
+      <input type="number" id="recipient-id" value="2" min="1" />
+      <br /><br />
+      <label for="sender-id">Sender User ID:</label>
+      <input type="number" id="sender-id" value="1" min="1" />
+      <br /><br />
+      <label for="test-message">Test Message:</label>
+      <input
+        type="text"
+        id="test-message"
+        value="Hello! This is a test message while you were offline."
+        style="width: 100%; margin-top: 5px"
+      />
+      <br /><br />
+      <button class="test-button" onclick="createTestNotification()">
+        Create Test Notification
+      </button>
+      <div id="create-notification-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>✅ Mark Notifications as Read</h2>
+      <label for="mark-user-id">User ID:</label>
+      <input type="number" id="mark-user-id" value="2" min="1" />
+      <button class="test-button" onclick="markAllNotificationsRead()">
+        Mark All as Read
+      </button>
+      <div id="mark-notifications-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>🎯 WebSocket Connection Test</h2>
+      <p>Test real-time notification delivery:</p>
+      <button class="test-button" onclick="connectWebSocket()">
+        Connect to WebSocket
+      </button>
+      <button class="test-button" onclick="disconnectWebSocket()">
+        Disconnect
+      </button>
+      <div id="websocket-status" class="result"></div>
+    </div>
+
+    <!-- Demo notification area -->
+    <div id="notification-demo" class="notification-demo">
+      <h4>
+        🔔 New Notification
+        <span id="demo-count" class="notification-count" style="display: none"
+          >0</span
+        >
+      </h4>
+      <div id="demo-content"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+      let socket = null;
+      const baseUrl = "http://localhost:3000";
+
+      // Check server status
+      async function checkServerStatus() {
+        const resultDiv = document.getElementById("server-status-result");
+        resultDiv.className = "result info";
+        resultDiv.textContent = "Checking server status...";
+
+        try {
+          const response = await fetch(`${baseUrl}/health`);
+          const data = await response.json();
+
+          resultDiv.className = "result success";
+          resultDiv.textContent = `✅ Server Status: ${data.status}\nMessage: ${data.message}\nTimestamp: ${data.timestamp}`;
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = `❌ Server Error: ${error.message}`;
+        }
+      }
+
+      // Get user notifications
+      async function testGetNotifications() {
+        const userId = document.getElementById("user-id").value;
+        const resultDiv = document.getElementById("user-notifications-result");
+
+        if (!userId) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "❌ Please enter a valid user ID";
+          return;
+        }
+
+        resultDiv.className = "result info";
+        resultDiv.textContent = "Fetching notifications...";
+
+        try {
+          const response = await fetch(
+            `${baseUrl}/api/notifications/${userId}`
+          );
+          const data = await response.json();
+
+          if (data.success) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = `✅ Found ${
+              data.count
+            } notifications for user ${userId}:\n\n${JSON.stringify(
+              data.notifications,
+              null,
+              2
+            )}`;
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = `❌ Error: ${data.message}`;
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = `❌ Request failed: ${error.message}`;
+        }
+      }
+
+      // Get notification count
+      async function testGetNotificationCount() {
+        const userId = document.getElementById("user-id").value;
+        const resultDiv = document.getElementById("user-notifications-result");
+
+        if (!userId) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "❌ Please enter a valid user ID";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `${baseUrl}/api/notifications/${userId}/count`
+          );
+          const data = await response.json();
+
+          if (data.success) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = `✅ User ${userId} has ${data.unreadCount} unread notifications`;
+
+            // Update demo notification count
+            const demoCount = document.getElementById("demo-count");
+            if (data.unreadCount > 0) {
+              demoCount.textContent = data.unreadCount;
+              demoCount.style.display = "inline";
+            } else {
+              demoCount.style.display = "none";
+            }
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = `❌ Error: ${data.message}`;
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = `❌ Request failed: ${error.message}`;
+        }
+      }
+
+      // Create test notification (would normally be done by server when message is sent)
+      async function createTestNotification() {
+        const resultDiv = document.getElementById("create-notification-result");
+        resultDiv.className = "result info";
+        resultDiv.textContent =
+          "Note: Test notification creation requires direct database access or API modification.";
+      }
+
+      // Mark all notifications as read
+      async function markAllNotificationsRead() {
+        const userId = document.getElementById("mark-user-id").value;
+        const resultDiv = document.getElementById("mark-notifications-result");
+
+        if (!userId) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = "❌ Please enter a valid user ID";
+          return;
+        }
+
+        resultDiv.className = "result info";
+        resultDiv.textContent = "Marking notifications as read...";
+
+        try {
+          const response = await fetch(
+            `${baseUrl}/api/notifications/${userId}/mark-read`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ markAll: true }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (data.success) {
+            resultDiv.className = "result success";
+            resultDiv.textContent = `✅ ${data.message}\nModified: ${data.modifiedCount} notifications`;
+
+            // Update demo
+            const demoCount = document.getElementById("demo-count");
+            demoCount.style.display = "none";
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.textContent = `❌ Error: ${data.message}`;
+          }
+        } catch (error) {
+          resultDiv.className = "result error";
+          resultDiv.textContent = `❌ Request failed: ${error.message}`;
+        }
+      }
+
+      // WebSocket connection test
+      function connectWebSocket() {
+        const resultDiv = document.getElementById("websocket-status");
+
+        if (socket && socket.connected) {
+          resultDiv.className = "result info";
+          resultDiv.textContent = "⚠️ WebSocket already connected";
+          return;
+        }
+
+        resultDiv.className = "result info";
+        resultDiv.textContent = "Connecting to WebSocket...";
+
+        socket = io(baseUrl);
+
+        socket.on("connect", () => {
+          resultDiv.className = "result success";
+          resultDiv.textContent = `✅ WebSocket connected!\nSocket ID: ${socket.id}`;
+
+          // Simulate user join
+          socket.emit("join", {
+            user_id: 999,
+            email: "test@example.com",
+            firstname: "Test",
+            lastname: "User",
+          });
+        });
+
+        socket.on("disconnect", () => {
+          resultDiv.className = "result info";
+          resultDiv.textContent = "🔌 WebSocket disconnected";
+        });
+
+        socket.on("unreadNotifications", (data) => {
+          const demoDiv = document.getElementById("notification-demo");
+          const demoContent = document.getElementById("demo-content");
+          const demoCount = document.getElementById("demo-count");
+
+          demoContent.innerHTML = `
+                    <p><strong>Received ${
+                      data.count
+                    } unread notifications!</strong></p>
+                    <ul>
+                        ${data.notifications
+                          .map(
+                            (n) => `
+                            <li>${n.sender.firstname} ${
+                              n.sender.lastname
+                            }: ${n.content.substring(0, 50)}...</li>
+                        `
+                          )
+                          .join("")}
+                    </ul>
+                `;
+
+          demoCount.textContent = data.count;
+          demoCount.style.display = "inline";
+          demoDiv.classList.add("show");
+
+          resultDiv.className = "result success";
+          resultDiv.textContent += `\n\n📬 Received ${data.count} unread notifications via WebSocket!`;
+        });
+
+        socket.on("error", (error) => {
+          resultDiv.className = "result error";
+          resultDiv.textContent = `❌ WebSocket error: ${error.message}`;
+        });
+      }
+
+      function disconnectWebSocket() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+
+        const resultDiv = document.getElementById("websocket-status");
+        resultDiv.className = "result info";
+        resultDiv.textContent = "🔌 WebSocket disconnected";
+
+        const demoDiv = document.getElementById("notification-demo");
+        demoDiv.classList.remove("show");
+      }
+
+      // Auto-check server status on load
+      window.addEventListener("load", () => {
+        checkServerStatus();
+      });
+    </script>
+  </body>
+</html>

@@ -103,11 +103,14 @@ class ChatWebSocket {
     // Listen for errors
     this.socket.on("error", (data) => {
       this.handleError(data);
-    });
-
-    // Listen for user added to chat
+    }); // Listen for user added to chat
     this.socket.on("userAddedToChat", (data) => {
       this.handleUserAddedToChat(data);
+    });
+
+    // Listen for unread notifications when user connects
+    this.socket.on("unreadNotifications", (data) => {
+      this.handleUnreadNotifications(data);
     });
   }
 
@@ -831,12 +834,15 @@ class ChatWebSocket {
     const noNotifications = document.getElementById("no-notifications");
     if (noNotifications) {
       noNotifications.style.display = "none";
-    }
-
-    // Create a new notification item
+    } // Create a new notification item
     const notificationItem = document.createElement("div");
     notificationItem.className = "notification-item";
     notificationItem.dataset.chatId = message.chat_id;
+
+    // Store notification ID if available for persistent notifications
+    if (message.notification_id) {
+      notificationItem.dataset.notificationId = message.notification_id;
+    }
 
     // Format timestamp using safe formatting function
     const formattedTime = this.safeFormatTimestamp(
@@ -855,15 +861,24 @@ class ChatWebSocket {
     }
         </div>
       </div>
-    `;
-
-    // Add click handler to navigate to the chat
+    `; // Add click handler to navigate to the chat
     notificationItem.addEventListener("click", () => {
+      // Mark this notification as read if it has a notification ID
+      if (notificationItem.dataset.notificationId) {
+        this.markNotificationsAsRead([notificationItem.dataset.notificationId]);
+      }
+
+      // Remove the notification from the dropdown
+      notificationItem.remove();
+
       // Hide the notification dropdown
       const notificationWindow = document.querySelector(".notification-window");
       if (notificationWindow) {
         notificationWindow.classList.remove("show");
       }
+
+      // Update notification count after removal
+      this.updateNotificationCount();
 
       // Navigate to the chat
       if (typeof window.loadChat === "function") {
@@ -884,6 +899,70 @@ class ChatWebSocket {
 
     // Update notification count
     this.updateNotificationCount();
+  }
+  // Handle unread notifications received when user connects
+  handleUnreadNotifications(data) {
+    console.log("Received unread notifications:", data);
+
+    const { notifications, count } = data;
+
+    if (count > 0) {
+      // Show notifications in header dropdown
+      notifications.forEach((notification) => {
+        const messageData = {
+          chat_id: notification.chat_id._id,
+          content: notification.content,
+          createdAt: notification.createdAt,
+          timestamp: notification.createdAt,
+          notification_id: notification._id, // Add notification ID for tracking
+        };
+
+        this.addToHeaderNotifications(messageData, notification.sender);
+      });
+
+      // Show a summary notification
+      if (typeof window.showNotification === "function") {
+        window.showNotification(
+          `You have ${count} unread message${
+            count > 1 ? "s" : ""
+          } from when you were offline`,
+          "info"
+        );
+      }
+
+      // Update notification badge
+      this.updateNotificationCount();
+
+      console.log(`Displayed ${count} unread notifications`);
+    }
+  }
+
+  // Mark notifications as read (can be called when user views them)
+  async markNotificationsAsRead(notificationIds = null, markAll = false) {
+    if (!window.currentUser?.user_id) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/notifications/${window.currentUser.user_id}/mark-read`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notificationIds: notificationIds,
+            markAll: markAll,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (result.success) {
+        console.log(`Marked ${result.modifiedCount} notifications as read`);
+      }
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+    }
   }
 
   // Update the notification count badge
