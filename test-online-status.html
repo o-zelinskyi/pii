@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Status Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .status-info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .chat-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: white;
+      }
+      .chat-avatar {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        background: #ddd;
+        border-radius: 50%;
+        margin-right: 12px;
+      }
+      .status-indicator {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid white;
+      }
+      .status-indicator.online {
+        background-color: #28a745;
+      }
+      .status-indicator.offline {
+        background-color: #6c757d;
+      }
+      .chat-info h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .debug-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .online-users-list {
+        background: #e8f5e8;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>Online Status Test</h1>
+
+      <div class="status-info">
+        <h3>Current Status</h3>
+        <p>
+          <strong>WebSocket Status:</strong>
+          <span id="ws-status">Disconnected</span>
+        </p>
+        <p>
+          <strong>Online Users Count:</strong> <span id="online-count">0</span>
+        </p>
+        <p>
+          <strong>Current User:</strong>
+          <span id="current-user">Not logged in</span>
+        </p>
+      </div>
+
+      <div class="online-users-list">
+        <h4>Online Users:</h4>
+        <div id="online-users-display">No online users</div>
+      </div>
+
+      <div>
+        <h3>Test Chat Items</h3>
+        <div id="test-chats">
+          <!-- Test chat items will be added here -->
+        </div>
+      </div>
+
+      <div>
+        <button onclick="refreshStatus()">Refresh Status</button>
+        <button onclick="simulateUserOnline()">Simulate User Online</button>
+        <button onclick="simulateUserOffline()">Simulate User Offline</button>
+        <button onclick="testChatStatusUpdate()">
+          Test Chat Status Update
+        </button>
+      </div>
+
+      <div class="debug-info">
+        <h4>Debug Log:</h4>
+        <div id="debug-log"></div>
+      </div>
+    </div>
+
+    <script src="/github/public/js/websocket-client.js"></script>
+    <script>
+      // Mock current user for testing
+      window.currentUser = {
+        user_id: 61,
+        firstname: "Test",
+        lastname: "User",
+      };
+
+      // Initialize online users if not present
+      if (!window.onlineUsers) {
+        window.onlineUsers = new Set();
+      }
+
+      let debugLog = document.getElementById("debug-log");
+      let ws = null;
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        debugLog.scrollTop = debugLog.scrollHeight;
+        console.log(message);
+      }
+
+      function updateDisplay() {
+        document.getElementById("ws-status").textContent =
+          ws && ws.socket && ws.socket.connected ? "Connected" : "Disconnected";
+        document.getElementById("online-count").textContent = window.onlineUsers
+          ? window.onlineUsers.size
+          : 0;
+        document.getElementById("current-user").textContent = window.currentUser
+          ? `${window.currentUser.firstname} ${window.currentUser.lastname} (ID: ${window.currentUser.user_id})`
+          : "Not logged in";
+
+        const onlineUsersDisplay = document.getElementById(
+          "online-users-display"
+        );
+        if (window.onlineUsers && window.onlineUsers.size > 0) {
+          onlineUsersDisplay.innerHTML = Array.from(window.onlineUsers)
+            .map((id) => `User ${id}`)
+            .join(", ");
+        } else {
+          onlineUsersDisplay.textContent = "No online users";
+        }
+      }
+
+      function createTestChatItem(userId, userName, isOnline) {
+        return `
+                <div class="chat-item" data-chat-id="test-${userId}" data-is-group="false" data-db-name="${userName}">
+                    <div class="chat-avatar">
+                        <div class="status-indicator ${
+                          isOnline ? "online" : "offline"
+                        }"></div>
+                    </div>
+                    <div class="chat-info">
+                        <h3 class="chat-name">${userName}</h3>
+                        <p>Last message preview...</p>
+                    </div>
+                </div>
+            `;
+      }
+
+      function refreshStatus() {
+        updateDisplay();
+        log("Status refreshed");
+      }
+
+      function simulateUserOnline() {
+        const testUserId = "60";
+        const testUserDetails = {
+          user_id: testUserId,
+          firstname: "Hello",
+          lastname: "Hello",
+        };
+
+        window.onlineUsers.add(testUserId);
+        log(`Simulated user ${testUserId} coming online`);
+
+        if (ws && ws.updateUserStatus) {
+          ws.updateUserStatus(testUserId, true, testUserDetails);
+        }
+
+        updateDisplay();
+      }
+
+      function simulateUserOffline() {
+        const testUserId = "60";
+        const testUserDetails = {
+          user_id: testUserId,
+          firstname: "Hello",
+          lastname: "Hello",
+        };
+
+        window.onlineUsers.delete(testUserId);
+        log(`Simulated user ${testUserId} going offline`);
+
+        if (ws && ws.updateUserStatus) {
+          ws.updateUserStatus(testUserId, false, testUserDetails);
+        }
+
+        updateDisplay();
+      }
+
+      function testChatStatusUpdate() {
+        // Create test chat items
+        const testChatsContainer = document.getElementById("test-chats");
+        testChatsContainer.innerHTML =
+          createTestChatItem(
+            "60",
+            "Hello Hello",
+            window.onlineUsers.has("60")
+          ) +
+          createTestChatItem("62", "Test User", window.onlineUsers.has("62"));
+
+        log("Created test chat items");
+
+        // Test status update
+        if (ws && ws.refreshChatListStatusIndicators) {
+          ws.refreshChatListStatusIndicators();
+          log("Refreshed chat list status indicators");
+        }
+      }
+
+      // Initialize WebSocket connection
+      function initWebSocket() {
+        try {
+          ws = new ChatWebSocket("http://localhost:3000", null);
+          log("WebSocket client initialized");
+
+          if (window.currentUser) {
+            ws.connect(window.currentUser);
+            log("WebSocket connection initiated");
+          }
+        } catch (error) {
+          log(`Error initializing WebSocket: ${error.message}`);
+        }
+      }
+
+      // Initial setup
+      document.addEventListener("DOMContentLoaded", function () {
+        log("Page loaded");
+        updateDisplay();
+
+        // Add some test online users
+        window.onlineUsers.add("60");
+        window.onlineUsers.add("61");
+
+        // Create initial test chats
+        testChatStatusUpdate();
+
+        // Try to connect to WebSocket
+        initWebSocket();
+
+        // Update display every 2 seconds
+        setInterval(updateDisplay, 2000);
+      });
+    </script>
+  </body>
+</html>
