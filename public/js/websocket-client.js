@@ -42,7 +42,6 @@ class ChatWebSocket {
     console.log("Formatted timestamp:", formatted);
     return formatted;
   }
-
   connect(userData) {
     this.socket = io(this.serverUrl, {
       transports: ["websocket"],
@@ -53,6 +52,9 @@ class ChatWebSocket {
       console.log("Connected to chat server");
       this.socket.emit("join", userData);
       this.reconnectAttempts = 0;
+
+      // Send initial online status
+      this.sendStatusUpdate("online", this.currentChatId);
     });
 
     this.socket.on("disconnect", () => {
@@ -61,6 +63,7 @@ class ChatWebSocket {
     });
 
     this.setupEventListeners();
+    this.setupActivityTracking();
   }
   setupEventListeners() {
     // New message received
@@ -75,6 +78,40 @@ class ChatWebSocket {
     this.socket.on("userOffline", (user) => {
       console.log("WS: User went offline:", user);
       this.updateUserStatus(user.user_id, false, user);
+    }); // Handle user status changes (real-time status updates)
+    this.socket.on("userStatusChanged", (data) => {
+      console.log("WS: User status changed:", data);
+      const { user_id, status, chatId } = data;
+
+      // Determine if user is online based on status
+      const isOnline = status === "online" || status === "active";
+
+      // Create user details object for status update
+      const userDetails = {
+        user_id: user_id,
+        status: status,
+        lastSeen: isOnline ? new Date() : new Date(),
+        currentChatId: chatId,
+      };
+
+      // For better status updates, try to get more complete user information
+      // from active user data or from chat participants
+      const activeChatItem = document.querySelector(".chat-item.active");
+      if (activeChatItem && activeChatItem.dataset.participants) {
+        try {
+          const participants = JSON.parse(activeChatItem.dataset.participants);
+          const participant = participants.find((p) => p.user_id === user_id);
+          if (participant) {
+            userDetails.firstname =
+              participant.firstname || userDetails.firstname;
+            userDetails.lastname = participant.lastname || userDetails.lastname;
+          }
+        } catch (e) {
+          console.warn("Could not parse participants data:", e);
+        }
+      }
+
+      this.updateUserStatus(user_id, isOnline, userDetails);
     });
 
     // Typing indicators
@@ -400,6 +437,9 @@ class ChatWebSocket {
       }
     });
 
+    // Update status indicators in chat list for 1-on-1 chats with this user
+    this.updateChatListStatusForUser(userId, isOnline, userDetails);
+
     // Update chat header status if this is the current chat participant
     if (userDetails && this.currentChatId) {
       console.log(
@@ -413,6 +453,43 @@ class ChatWebSocket {
         }`
       );
     }
+  }
+
+  // Helper function to update chat list status indicators for a specific user
+  updateChatListStatusForUser(userId, isOnline, userDetails = null) {
+    const currentUserId = window.currentUser?.user_id;
+    if (!currentUserId) return;
+
+    // Find all 1-on-1 chat items that involve this user
+    const chatItems = document.querySelectorAll(
+      '.chat-item:not([data-is-group="true"])'
+    );
+
+    chatItems.forEach((chatItem) => {
+      const chatId = chatItem.dataset.chatId;
+
+      // Check if this chat involves the user whose status changed
+      // We'll need to check against the chat name or stored participant data
+      const chatName = chatItem.dataset.dbName;
+      const userFullName = userDetails
+        ? `${userDetails.firstname} ${userDetails.lastname}`
+        : null;
+
+      // For 1-on-1 chats, the chat name should contain the other user's name
+      if (userFullName && chatName && chatName.includes(userFullName)) {
+        const statusIndicator = chatItem.querySelector(".status-indicator");
+        if (statusIndicator) {
+          statusIndicator.classList.remove("online", "offline");
+          statusIndicator.classList.add(isOnline ? "online" : "offline");
+
+          console.log(
+            `Updated chat list status indicator for user ${userId} in chat "${chatName}" to ${
+              isOnline ? "online" : "offline"
+            }`
+          );
+        }
+      }
+    });
   }
   displayMessages(messages, chatId) {
     if (this.currentChatId !== chatId) return;
@@ -463,6 +540,28 @@ class ChatWebSocket {
       this.addChatToList(chat);
     });
   }
+  // Helper function to determine if a chat should show online status
+  getChatOnlineStatus(chat) {
+    if (!chat) return false;
+
+    // For group chats, don't show online status
+    if (chat.is_group_chat || chat.isGroup) {
+      return false;
+    }
+
+    // For 1-on-1 chats, check if the other user is online
+    if (chat.participants && chat.participants.length === 2) {
+      const currentUserId = window.currentUser?.user_id;
+      const otherUser = chat.participants.find(
+        (p) => p.user_id !== currentUserId
+      );
+      if (otherUser && window.onlineUsers) {
+        return window.onlineUsers.has(otherUser.user_id.toString());
+      }
+    }
+
+    return false;
+  }
 
   addChatToList(chat) {
     const chatListContainer = document.getElementById("chatListContainer");
@@ -480,8 +579,9 @@ class ChatWebSocket {
     const chatElement = document.createElement("li");
     chatElement.className = "chat-item";
     chatElement.dataset.chatId = chat._id; // Use chat._id from MongoDB
-    // chatElement.dataset.dbName = chat.name; // Store the original DB name - will be set below
-    chatElement.dataset.isGroup = chat.is_group_chat || chat.isGroup; // Store if it's a group chat    // Server already handles proper chat name generation for 1-on-1 chats
+    chatElement.dataset.isGroup = chat.is_group_chat || chat.isGroup; // Store if it's a group chat
+
+    // Server already handles proper chat name generation for 1-on-1 chats
     // Trust the server's chat name which includes user names for 1-on-1 chats
     let chatNameToDisplay = chat.name || "Unnamed Chat";
     let lastMessageText = chat.lastMessage?.content || "No messages yet";
@@ -494,14 +594,24 @@ class ChatWebSocket {
 
     chatElement.dataset.dbName = chatNameToDisplay; // Set dbName to the determined display name
 
+    const isOnline = this.getChatOnlineStatus(chat);
+    const statusClass = isOnline ? "online" : "offline";
+
     chatElement.innerHTML = `
-      <div class="chat-details">
-        <h3 class="chat-name">${this.escapeHtml(chatNameToDisplay)}</h3>
-        <p class="last-message">${this.escapeHtml(lastMessageText)}</p>
+      <div class="chat-avatar">
+        <div class="status-indicator ${statusClass}"></div>
       </div>
-      <div class="chat-meta">
-        <span class="last-message-time">${lastMessageTime}</span>
-        <!-- <span class="unread-badge" style="display: none;">0</span> -->
+      <div class="chat-info">
+        <div class="chat-header-info">
+          <h3 class="chat-name">${this.escapeHtml(chatNameToDisplay)}</h3>
+          <span class="chat-time">${lastMessageTime}</span>
+        </div>
+        <div class="chat-preview">
+          <p class="last-message">${this.escapeHtml(lastMessageText)}</p>
+          <div class="chat-badges">
+            <span class="unread-badge" style="display: none;">0</span>
+          </div>
+        </div>
       </div>
     `;
 
@@ -1069,6 +1179,93 @@ class ChatWebSocket {
     } else {
       notificationCount.style.display = "none";
     }
+  }
+
+  // Method to send status updates to server
+  sendStatusUpdate(status, chatId = null) {
+    if (this.socket && this.socket.connected) {
+      console.log(`Sending status update: ${status}, chatId: ${chatId}`);
+      this.socket.emit("updateStatus", {
+        status: status,
+        chatId: chatId,
+      });
+    } else {
+      console.warn("Cannot send status update: socket not connected");
+    }
+  }
+
+  // Method to automatically update status when user becomes active/inactive
+  updateUserActivity(isActive = true) {
+    const status = isActive ? "online" : "away";
+    this.sendStatusUpdate(status, this.currentChatId);
+  }
+
+  // Setup activity tracking to automatically update user status
+  setupActivityTracking() {
+    let lastActivity = Date.now();
+    let isIdle = false;
+    const IDLE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+    const ACTIVITY_CHECK_INTERVAL = 30 * 1000; // 30 seconds
+
+    // Activity events to track
+    const activityEvents = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    // Update activity timestamp
+    const updateActivity = () => {
+      lastActivity = Date.now();
+      if (isIdle) {
+        isIdle = false;
+        console.log("User is active again");
+        this.updateUserActivity(true);
+      }
+    };
+
+    // Add event listeners for activity
+    activityEvents.forEach((event) => {
+      document.addEventListener(event, updateActivity, true);
+    });
+
+    // Check for idle status periodically
+    setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivity;
+
+      if (!isIdle && timeSinceLastActivity > IDLE_THRESHOLD) {
+        isIdle = true;
+        console.log("User is idle");
+        this.updateUserActivity(false);
+      }
+    }, ACTIVITY_CHECK_INTERVAL);
+
+    // Track page visibility changes
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        console.log("Page is hidden");
+        this.sendStatusUpdate("away", this.currentChatId);
+      } else {
+        console.log("Page is visible");
+        this.updateUserActivity(true);
+        lastActivity = Date.now();
+        isIdle = false;
+      }
+    });
+
+    // Handle window focus/blur
+    window.addEventListener("focus", () => {
+      this.updateUserActivity(true);
+      lastActivity = Date.now();
+      isIdle = false;
+    });
+
+    window.addEventListener("blur", () => {
+      this.sendStatusUpdate("away", this.currentChatId);
+    });
   }
 }
 

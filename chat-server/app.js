@@ -11,7 +11,6 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration for Socket.IO
 const io = socketIo(server, {
   cors: {
     origin: [
@@ -24,7 +23,6 @@ const io = socketIo(server, {
   },
 });
 
-// Middleware
 app.use(helmet());
 app.use(
   cors({
@@ -38,14 +36,12 @@ app.use(
 );
 app.use(express.json());
 
-// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
-// MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
@@ -58,11 +54,10 @@ mongoose
     console.log("Please check your MongoDB Atlas credentials in .env file");
   });
 
-// MongoDB Models
 const userSchema = new mongoose.Schema(
   {
     user_id: { type: Number, required: true, unique: true },
-    email: { type: String, required: true, unique: true }, // Made email unique as it usually is
+    email: { type: String, required: true, unique: true },
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
     lastSeen: { type: Date, default: Date.now },
@@ -87,11 +82,10 @@ const userStatusSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Notification schema for persistent notifications
 const notificationSchema = new mongoose.Schema(
   {
-    recipient_id: { type: Number, required: true }, // Who should receive this notification
-    sender_id: { type: Number, required: true }, // Who sent the message that triggered notification
+    recipient_id: { type: Number, required: true },
+    sender_id: { type: Number, required: true },
     chat_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Chat",
@@ -107,15 +101,14 @@ const notificationSchema = new mongoose.Schema(
       enum: ["message", "chat_created", "user_added", "chat_renamed"],
       default: "message",
     },
-    content: { type: String, required: true }, // Preview of the message or notification text
+    content: { type: String, required: true },
     isRead: { type: Boolean, default: false },
     readAt: { type: Date, default: null },
-    deliveredAt: { type: Date, default: null }, // When notification was delivered to user
+    deliveredAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-// Add indexes for better performance
 notificationSchema.index({ recipient_id: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ chat_id: 1 });
 notificationSchema.index({ message_id: 1 });
@@ -180,21 +173,18 @@ const chatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema); // Create User model
+const User = mongoose.model("User", userSchema);
 const Message = mongoose.model("Message", messageSchema);
-const Chat = mongoose.model("Chat", chatSchema); // Create Chat model
+const Chat = mongoose.model("Chat", chatSchema);
 const UserStatus = mongoose.model("UserStatus", userStatusSchema);
-const Notification = mongoose.model("Notification", notificationSchema); // Create Notification model for persistent notifications
+const Notification = mongoose.model("Notification", notificationSchema);
 
-// Store active socket connections and online users
 const activeUsers = new Map(); // socketId -> userData
 const userSessions = new Map(); // user_id -> Set of socketIds
 const onlineUsers = new Set(); // Simple array to track online user IDs
 
-// Socket.IO connection handling
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  // User authentication and join
   socket.on("join", async (userData) => {
     try {
       const { user_id, email, firstname, lastname } = userData;
@@ -226,7 +216,6 @@ io.on("connection", (socket) => {
       }
       userSessions.get(user_id).add(socket.id);
 
-      // Add to online users (Set prevents duplicates)
       onlineUsers.add(user_id);
 
       // Join user to their chat rooms
@@ -256,10 +245,9 @@ io.on("connection", (socket) => {
       })
         .populate("lastMessage")
         .sort({ lastActivity: -1 })
-        .lean(); // Process chats to include participant details and proper names
+        .lean();
       const chatsWithDetails = await Promise.all(
         chatsRaw.map(async (chat) => {
-          // Populate participant details with user information including real-time status
           const participantsWithDetails = await Promise.all(
             chat.participants.map(async (participant) => {
               const isOnline = onlineUsers.has(participant.user_id);
@@ -269,7 +257,6 @@ io.on("connection", (socket) => {
               };
 
               if (isOnline) {
-                // Get basic info from activeUsers or use cached data
                 const activeUserData = Array.from(activeUsers.values()).find(
                   (u) => u.user_id === participant.user_id
                 );
@@ -278,7 +265,6 @@ io.on("connection", (socket) => {
                 participantData.lastname = activeUserData?.lastname || "User";
                 participantData.lastSeen = new Date(); // Online now
               } else {
-                // Get full info from MongoDB for offline users
                 const participantUser = await User.findOne({
                   user_id: participant.user_id,
                 });
@@ -294,7 +280,6 @@ io.on("connection", (socket) => {
             })
           );
 
-          // Generate proper chat name for 1-on-1 chats
           let chatName = chat.name;
           if (!chat.isGroup && chat.participants.length === 2) {
             const otherParticipant = chat.participants.find(
@@ -319,7 +304,6 @@ io.on("connection", (socket) => {
       );
       socket.emit("chatsLoaded", chatsWithDetails);
 
-      // Send unread notifications to user when they connect
       try {
         const unreadNotifications = await Notification.find({
           recipient_id: user_id,
@@ -380,7 +364,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Enhanced socket event for user status
+  // socket event for user status
   socket.on("updateStatus", async (data) => {
     const { status, chatId } = data;
     const user = activeUsers.get(socket.id);
@@ -962,69 +946,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Typing indicator
-  socket.on("typing", (data) => {
-    const { chatId, isTyping } = data;
-    const user = activeUsers.get(socket.id);
-
-    if (user) {
-      socket.to(chatId).emit("userTyping", {
-        user_id: user.user_id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        isTyping,
-      });
-    }
-  });
-
-  // Message reactions
-  socket.on("addReaction", async (data) => {
-    try {
-      const { messageId, emoji } = data;
-      const user = activeUsers.get(socket.id);
-
-      if (!user) {
-        socket.emit("error", { message: "User not authenticated" });
-        return;
-      }
-
-      const message = await Message.findById(messageId);
-      if (!message) {
-        socket.emit("error", { message: "Message not found" });
-        return;
-      }
-
-      // Check if user already reacted with this emoji
-      const existingReaction = message.reactions.find(
-        (r) => r.user_id === user.user_id && r.emoji === emoji
-      );
-
-      if (existingReaction) {
-        // Remove reaction
-        message.reactions = message.reactions.filter(
-          (r) => !(r.user_id === user.user_id && r.emoji === emoji)
-        );
-      } else {
-        // Add reaction
-        message.reactions.push({
-          user_id: user.user_id,
-          emoji,
-        });
-      }
-
-      await message.save();
-
-      // Notify chat participants
-      io.to(message.chat_id.toString()).emit("reactionUpdated", {
-        messageId,
-        reactions: message.reactions,
-      });
-    } catch (error) {
-      console.error("Error handling reaction:", error);
-      socket.emit("error", { message: "Failed to update reaction" });
-    }
-  });
-
   // User disconnection
   socket.on("disconnect", async () => {
     try {
@@ -1152,7 +1073,6 @@ app.post("/api/create-chat", async (req, res) => {
     if (isGroup) {
       chatName = `Group Chat ${Date.now()}`;
     } else {
-      // For 1-on-1 chats, we'll set the name based on participants later
       chatName = `Chat ${Date.now()}`;
     }
 
@@ -1450,9 +1370,6 @@ app.get("/api/notifications/:userId/count", async (req, res) => {
     });
   }
 });
-
-// Socket.IO connection handling
-// ...existing code...
 
 // Start server
 const PORT = process.env.PORT || 3000;
