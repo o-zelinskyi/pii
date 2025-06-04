@@ -13,6 +13,7 @@ require APPROOT . '/views/inc/head.php'; ?>
   window.students = <?php echo json_encode($data['students']); ?>;
   window.socketUrl = "<?php echo $data['socketUrl']; ?>";
   window.urlRoot = "<?php echo URLROOT; ?>";
+  window.initialChatId = <?php echo isset($data['initialChatId']) ? json_encode($data['initialChatId']) : 'null'; ?>;
 
   // Initialize WebSocket connection when page loads
   document.addEventListener('DOMContentLoaded', function() {
@@ -20,6 +21,11 @@ require APPROOT . '/views/inc/head.php'; ?>
     setTimeout(() => {
       if (typeof initializeChatWebSocket === 'function' && window.currentUser && window.socketUrl) {
         initializeChatWebSocket(window.currentUser, window.socketUrl);
+
+        // If there's an initial chat ID, load that chat
+        if (window.initialChatId && typeof loadChat === 'function') {
+          loadChat(window.initialChatId);
+        }
       } else {
         console.error('initializeChatWebSocket function not available or missing data');
         console.log('Available functions:', typeof initializeChatWebSocket);

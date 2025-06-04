@@ -62,11 +62,13 @@ class Chats extends Controller
 
     $this->userSyncService->syncUserLogin($userData);
   }
-
   public function messages()
   {
     // Sync user to MongoDB when accessing chat
     $this->syncCurrentUser();
+
+    // Get chatId from URL parameter if provided
+    $chatId = isset($_GET['chatId']) ? (int)$_GET['chatId'] : null;
 
     // Get current user data for socket connection
     $userData = [
@@ -83,7 +85,8 @@ class Chats extends Controller
     $data = [
       'currentUser' => $userData,
       'students' => $students,
-      'socketUrl' => 'http://localhost:3000'
+      'socketUrl' => 'http://localhost:3000',
+      'initialChatId' => $chatId // Pass the chatId to the view
     ];
 
     $this->view('pages/chat', $data);

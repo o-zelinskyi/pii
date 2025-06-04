@@ -118,7 +118,6 @@ class ChatWebSocket {
       }, 1000);
     }
   }
-
   createMessageNotification(message, sender) {
     const notification = document.createElement("div");
     notification.className = "message-notification";
@@ -135,9 +134,27 @@ class ChatWebSocket {
             </div>
         `;
 
-    notification.addEventListener("click", () => {
-      // Navigate to the chat
-      window.location.href = `/github/chats/messages?chatId=${message.chat_id}`;
+    notification.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Hide notification window first
+      const notificationWindow = document.querySelector(".notification-window");
+      if (notificationWindow) {
+        notificationWindow.style.display = "none";
+      }
+
+      // Load the specific chat
+      console.log(`Loading chat with ID: ${message.chat_id}`);
+      if (typeof window.loadChat === "function") {
+        window.loadChat(message.chat_id);
+      } else {
+        // Fallback to navigation if loadChat function is not available
+        console.warn(
+          "loadChat function not available, falling back to navigation"
+        );
+        window.location.href = `/github/chats/messages?chatId=${message.chat_id}`;
+      }
     });
 
     // Add to notification window
@@ -152,7 +169,6 @@ class ChatWebSocket {
       console.log(`Notification: ${message} (${type})`);
     }
   }
-
   addToNotificationWindow(notification) {
     let notificationWindow = document.querySelector(".notification-window");
     if (!notificationWindow) {
@@ -167,15 +183,20 @@ class ChatWebSocket {
     notificationWindow.appendChild(notification);
     notificationWindow.style.display = "flex";
 
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
+    // Store reference to timeout for potential clearing
+    const timeoutId = setTimeout(() => {
       if (notification.parentNode) {
         notification.remove();
       }
       if (notificationWindow.children.length === 0) {
         notificationWindow.style.display = "none";
       }
-    }, 5000);
+    }, 10000); // Increased to 10 seconds for better UX
+
+    // Allow manual closing of individual notifications
+    notification.addEventListener("click", () => {
+      clearTimeout(timeoutId);
+    });
   }
 
   addMessageToChat(message, sender) {
