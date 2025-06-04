@@ -314,6 +314,16 @@ function updateChatHeader(chatItem) {
 
     const now = new Date();
     const lastSeen = new Date(lastSeenDate);
+
+    // Check if the date is valid
+    if (isNaN(lastSeen.getTime())) {
+      console.warn(
+        "Invalid lastSeenDate provided to formatLastSeenTime:",
+        lastSeenDate
+      );
+      return "recently";
+    }
+
     const diffMs = now - lastSeen;
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

@@ -8,6 +8,39 @@ class ChatWebSocket {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
   }
+  // Helper function to safely format timestamps for notifications
+  safeFormatTimestamp(timestamp) {
+    if (!timestamp) {
+      console.warn("No timestamp provided to safeFormatTimestamp");
+      return "recently";
+    }
+
+    console.log(
+      "safeFormatTimestamp received:",
+      timestamp,
+      "type:",
+      typeof timestamp
+    );
+
+    const date = new Date(timestamp);
+
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      console.warn(
+        "Invalid timestamp provided to safeFormatTimestamp:",
+        timestamp
+      );
+      return "recently";
+    }
+
+    const formatted = date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    console.log("Formatted timestamp:", formatted);
+    return formatted;
+  }
 
   connect(userData) {
     this.socket = io(this.serverUrl, {
@@ -398,9 +431,12 @@ class ChatWebSocket {
     // Trust the server's chat name which includes user names for 1-on-1 chats
     let chatNameToDisplay = chat.name || "Unnamed Chat";
     let lastMessageText = chat.lastMessage?.content || "No messages yet";
-    let lastMessageTime = chat.lastMessage?.timestamp
-      ? this.formatTime(chat.lastMessage.timestamp)
-      : "";
+    let lastMessageTime =
+      chat.lastMessage?.createdAt || chat.lastMessage?.timestamp
+        ? this.formatTime(
+            chat.lastMessage.createdAt || chat.lastMessage.timestamp
+          )
+        : "";
 
     chatElement.dataset.dbName = chatNameToDisplay; // Set dbName to the determined display name
 
@@ -417,12 +453,8 @@ class ChatWebSocket {
 
     chatListContainer.prepend(chatElement); // Add to the top of the list
   }
-
   formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return this.safeFormatTimestamp(timestamp) || "";
   }
 
   escapeHtml(text) {
@@ -628,12 +660,21 @@ class ChatWebSocket {
       );
     }
   }
-
   formatLastSeenTime(lastSeenDate) {
     if (!lastSeenDate) return "recently";
 
     const now = new Date();
     const lastSeen = new Date(lastSeenDate);
+
+    // Check if the date is valid
+    if (isNaN(lastSeen.getTime())) {
+      console.warn(
+        "Invalid lastSeenDate provided to formatLastSeenTime:",
+        lastSeenDate
+      );
+      return "recently";
+    }
+
     const diffMs = now - lastSeen;
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -778,9 +819,10 @@ class ChatWebSocket {
       this.socket.emit("getUserChats");
     }
   }
-
   // Add a notification to the header notification dropdown
   addToHeaderNotifications(message, sender) {
+    console.log("addToHeaderNotifications called with:", { message, sender });
+
     // Find the header notification content
     const notificationContent = document.getElementById("notification-content");
     if (!notificationContent) return;
@@ -796,12 +838,10 @@ class ChatWebSocket {
     notificationItem.className = "notification-item";
     notificationItem.dataset.chatId = message.chat_id;
 
-    // Format timestamp
-    const timestamp = new Date(message.timestamp);
-    const formattedTime = timestamp.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    // Format timestamp using safe formatting function
+    const formattedTime = this.safeFormatTimestamp(
+      message.createdAt || message.timestamp
+    );
 
     notificationItem.innerHTML = `
       <div class="notification-item-content">

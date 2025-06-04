@@ -50,9 +50,15 @@ class ChatList {
       badgeElement.remove();
     }
   }
-
   formatTime(timestamp) {
+    if (!timestamp) return "";
+
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid timestamp provided to formatTime:", timestamp);
+      return "";
+    }
+
     const now = new Date();
     const diff = now - date;
 
