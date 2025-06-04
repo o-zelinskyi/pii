@@ -586,23 +586,30 @@ function setupChatInput() {
     sendBtn.style.opacity = hasText ? "1" : "0.5";
     sendBtn.style.transform = hasText ? "scale(1)" : "scale(0.9)";
   }
-
   function sendMessage() {
     const message = messageInput.value.trim();
     if (message) {
-      addMessage(message, true);
+      // Check if WebSocket is connected and we have a current chat
+      if (!window.chatWS || !window.chatWS.currentChatId) {
+        console.error(
+          "Cannot send message: WebSocket not connected or no chat selected"
+        );
+        if (typeof showNotification === "function") {
+          showNotification(
+            "Unable to send message. Please check your connection.",
+            "error"
+          );
+        }
+        return;
+      }
+
+      // Send message via WebSocket
+      window.chatWS.sendMessage(window.chatWS.currentChatId, message);
+
+      // Clear input and reset UI state
       messageInput.value = "";
       messageInput.style.height = "auto";
       updateSendButtonState();
-
-      // Simulate typing indicator
-      showTypingIndicator();
-
-      // Simulate response after delay
-      setTimeout(() => {
-        hideTypingIndicator();
-        simulateResponse(message);
-      }, 1000 + Math.random() * 2000);
     }
   }
   function addMessage(text, isSelf = false, timestamp = null, sender = null) {
@@ -674,36 +681,6 @@ function setupChatInput() {
       typingIndicator.style.display = "none";
     }
   }
-
-  // Simulate bot/user responses
-  function simulateResponse(originalMessage) {
-    const responses = [
-      "That's interesting! Tell me more.",
-      "I completely agree with you on that.",
-      "Thanks for sharing that with me.",
-      "That's a great point!",
-      "I'll look into that and get back to you.",
-      "Sounds good! Let's proceed with that plan.",
-      "I appreciate you bringing this up.",
-      "That makes perfect sense.",
-    ];
-
-    const randomResponse =
-      responses[Math.floor(Math.random() * responses.length)];
-    addMessage(randomResponse, false);
-
-    // Update message status to read
-    setTimeout(() => {
-      const lastSelfMessage = document.querySelector(
-        ".message.self:last-of-type .message-status"
-      );
-      if (lastSelfMessage) {
-        lastSelfMessage.textContent = "✓✓";
-        lastSelfMessage.style.color = "var(--accent-clr)";
-      }
-    }, 500);
-  }
-
   // File upload handling
   function handleFileUpload(files) {
     Array.from(files).forEach((file) => {
@@ -1283,28 +1260,3 @@ function setupFilterTabs() {
     }
   }
 }
-
-// Load messages based on chat ID (simulated data) - This function should be removed or not used for actual loading
-// function loadChatMessages(chatId) {
-//   console.log(`Loading messages for chat ${chatId}... (using mock data)`);
-//   const messages = getMockMessages(chatId);
-//   const chatMessagesContainer = document.getElementById("chat-messages");
-//   const noMessagesDiv = document.getElementById("no-messages");
-
-//   if (!chatMessagesContainer || !noMessagesDiv) {
-//     console.error("Chat messages container or noMessagesDiv not found");
-//     return;
-//   }
-
-//   chatMessagesContainer.innerHTML = ""; // Clear previous messages
-
-//   if (messages.length === 0) {
-//     noMessagesDiv.style.display = "block";
-//   } else {
-//     noMessagesDiv.style.display = "none";
-//     messages.forEach((msg) => {
-//       addMessage(msg.text, msg.isSelf, msg.timestamp);
-//     });
-//   }
-//   scrollToBottom();
-// }
